@@ -21,6 +21,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackButton from '@/components/BackButton';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase';
+import FAQModal from '@/components/FAQModal';
+import TermsOfServiceModal from '@/components/TermsOfServiceModal';
+import PrivacyPolicyModalFull from '@/components/PrivacyPolicyModalFull';
+import TestNotifications from '@/components/TestNotifications';
 
 // Ersätter expo-notifications-implementationen om paketet saknas
 const Notifications = {
@@ -36,6 +40,9 @@ export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState('Svenska');
   const [showLanguageOptions, setShowLanguageOptions] = useState(false);
+  const [showFAQModal, setShowFAQModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
   const languages = [
     { code: 'sv', name: 'Svenska' },
@@ -233,6 +240,8 @@ export default function SettingsScreen() {
             />
           </View>
           
+          {notifications && <TestNotifications />}
+          
           <View style={styles.preferenceItem}>
             <View style={styles.preferenceLeft}>
               <Moon size={24} color={theme.colors.text} />
@@ -354,7 +363,7 @@ export default function SettingsScreen() {
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => openWebPage('https://moisushi.se/faq')}
+            onPress={() => setShowFAQModal(true)}
           >
             <View style={styles.settingItemLeft}>
               <HelpCircle size={24} color={theme.colors.text} />
@@ -365,7 +374,7 @@ export default function SettingsScreen() {
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => openWebPage('https://moisushi.se/terms')}
+            onPress={() => setShowTermsModal(true)}
           >
             <View style={styles.settingItemLeft}>
               <FileText size={24} color={theme.colors.text} />
@@ -376,7 +385,7 @@ export default function SettingsScreen() {
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => openWebPage('https://moisushi.se/privacy')}
+            onPress={() => setShowPrivacyModal(true)}
           >
             <View style={styles.settingItemLeft}>
               <ShieldAlert size={24} color={theme.colors.text} />
@@ -409,6 +418,24 @@ export default function SettingsScreen() {
         <Text style={styles.versionText}>Version 1.0.0</Text>
         <Footer />
       </ScrollView>
+      
+      {/* FAQ Modal */}
+      <FAQModal 
+        visible={showFAQModal}
+        onClose={() => setShowFAQModal(false)}
+      />
+      
+      {/* Terms of Service Modal */}
+      <TermsOfServiceModal 
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
+      
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModalFull 
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </SafeAreaView>
   );
 }

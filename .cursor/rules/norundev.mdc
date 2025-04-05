@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+Dont run npm run dev or npx expo start. I will handle that.
+- You can @ files here
+- You can use markdown but dont have to

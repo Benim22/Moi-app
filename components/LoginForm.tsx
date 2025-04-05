@@ -14,8 +14,9 @@ import {
 import { theme } from '@/constants/theme';
 import { useUserStore } from '@/store/user-store';
 import { useRouter } from 'expo-router';
-import { Mail, Lock, User, LogIn, UserPlus, X } from 'lucide-react-native';
+import { Mail, Lock, User, LogIn, UserPlus, X, CheckCircle, Circle } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -26,6 +27,8 @@ export default function LoginForm() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   
   const { login, signUp, isLoading } = useUserStore();
   const router = useRouter();
@@ -33,6 +36,11 @@ export default function LoginForm() {
   useEffect(() => {
     // Reset errors when switching modes
     setErrors({});
+    
+    // Reset privacy policy acceptance when switching modes
+    if (isLogin) {
+      setPrivacyPolicyAccepted(false);
+    }
   }, [isLogin]);
 
   const validateForm = () => {
@@ -45,6 +53,10 @@ export default function LoginForm() {
     else if (password.length < 6) newErrors.password = 'Lösenord måste vara minst 6 tecken';
     
     if (!isLogin && !name) newErrors.name = 'Namn krävs';
+    
+    if (!isLogin && !privacyPolicyAccepted) {
+      newErrors.privacyPolicy = 'Du måste acceptera integritetspolicyn för att fortsätta';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -109,6 +121,19 @@ export default function LoginForm() {
       Alert.alert('Fel', error.message || 'Ett fel uppstod vid återställning av lösenord');
     } finally {
       setIsResetting(false);
+    }
+  };
+  
+  const togglePrivacyPolicyAcceptance = () => {
+    setPrivacyPolicyAccepted(!privacyPolicyAccepted);
+    
+    // Om det fanns ett felmeddelande, radera det när användaren kryssar i rutan
+    if (errors.privacyPolicy) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.privacyPolicy;
+        return newErrors;
+      });
     }
   };
 
@@ -200,13 +225,41 @@ export default function LoginForm() {
           </View>
         </View>
         
-        {isLogin && (
+        {isLogin ? (
           <Pressable 
             style={styles.forgotPassword}
             onPress={() => setShowForgotPassword(true)}
           >
             <Text style={styles.forgotPasswordText}>Glömt lösenord?</Text>
           </Pressable>
+        ) : (
+          <View>
+            <View style={styles.privacyPolicyContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer} 
+                onPress={togglePrivacyPolicyAcceptance}
+              >
+                {privacyPolicyAccepted ? (
+                  <CheckCircle size={24} color={theme.colors.gold} />
+                ) : (
+                  <Circle size={24} color={theme.colors.subtext} />
+                )}
+              </TouchableOpacity>
+              <Text style={styles.privacyPolicyText}>
+                Jag accepterar 
+                <Text 
+                  style={styles.privacyPolicyLink}
+                  onPress={() => setShowPrivacyPolicy(true)}
+                > integritetspolicyn
+                </Text>
+              </Text>
+            </View>
+            {errors.privacyPolicy && (
+              <Text style={[styles.errorText, styles.privacyPolicyError]}>
+                {errors.privacyPolicy}
+              </Text>
+            )}
+          </View>
         )}
         
         <TouchableOpacity 
@@ -249,40 +302,48 @@ export default function LoginForm() {
                 <X size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.modalText}>
-              Ange din e-postadress så skickar vi instruktioner för att återställa ditt lösenord.
-            </Text>
-
-            <View style={styles.inputWrapper}>
-              <Mail size={20} color={theme.colors.subtext} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input}
-                placeholder="Din e-postadress"
-                placeholderTextColor={theme.colors.subtext}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={resetEmail}
-                onChangeText={setResetEmail}
-              />
-            </View>
-
-            <View style={styles.modalButtonContainer}>
+            
+            <View style={styles.modalBody}>
+              <Text style={styles.modalText}>
+                Ange din e-postadress så skickar vi instruktioner för att återställa ditt lösenord.
+              </Text>
+              
+              <View style={styles.inputWrapper}>
+                <Mail size={20} color={theme.colors.subtext} style={styles.inputIcon} />
+                <TextInput 
+                  style={styles.input}
+                  placeholder="Din e-postadress"
+                  placeholderTextColor={theme.colors.subtext}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                />
+              </View>
+              
               <TouchableOpacity 
-                style={styles.submitButton}
+                style={styles.submitButton} 
                 onPress={handleResetPassword}
                 disabled={isResetting}
               >
                 {isResetting ? (
                   <ActivityIndicator color={theme.colors.buttonText || "#fff"} />
                 ) : (
-                  <Text style={styles.submitButtonText}>Skicka återställningslänk</Text>
+                  <Text style={styles.submitButtonText}>
+                    Skicka återställningslänk
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+      
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModal 
+        visible={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
+      />
     </View>
   );
 }
@@ -290,113 +351,95 @@ export default function LoginForm() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.card,
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    width: '100%',
-    maxWidth: 450,
-    alignSelf: 'center',
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    shadowRadius: 8,
     elevation: 5,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    overflow: 'hidden',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     color: theme.colors.text,
-    textAlign: 'center',
+    marginBottom: 8,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.background,
-    padding: 4,
-    marginHorizontal: 16,
-    borderRadius: 8,
     marginBottom: 16,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   selectedTab: {
-    backgroundColor: theme.colors.gold,
+    borderBottomColor: theme.colors.gold,
   },
   tabText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
+    fontWeight: '500',
+    color: theme.colors.subtext,
   },
   selectedTabText: {
-    color: theme.colors.background,
+    color: theme.colors.gold,
+    fontWeight: '600',
   },
   formContainer: {
-    padding: theme.spacing.xl,
+    padding: 16,
   },
   inputContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
   labelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: 6,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: theme.colors.text,
-  },
-  errorText: {
-    fontSize: 12,
-    color: theme.colors.error || '#ff3b30',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.darkCard || theme.colors.background,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  inputError: {
-    borderColor: theme.colors.error || '#ff3b30',
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
+    position: 'relative',
   },
   inputIcon: {
-    marginLeft: theme.spacing.md,
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
   },
   input: {
     flex: 1,
-    padding: theme.spacing.md,
     color: theme.colors.text,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingLeft: 40,
     fontSize: 16,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: theme.spacing.xl,
-  },
-  forgotPasswordText: {
-    color: theme.colors.gold,
-    fontWeight: '600',
   },
   submitButton: {
     backgroundColor: theme.colors.gold,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    justifyContent: 'center',
+    marginTop: 8,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -404,45 +447,86 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitButtonText: {
-    color: theme.colors.buttonText || theme.colors.background,
-    fontWeight: '600',
+    color: theme.colors.buttonText || '#000',
     fontSize: 16,
-    marginLeft: theme.spacing.sm,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: theme.colors.gold,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorText: {
+    color: '#e53935',
+    fontSize: 12,
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: '#e53935',
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.lg,
   },
   modalContent: {
     backgroundColor: theme.colors.card,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.xl,
-    width: '100%',
+    borderRadius: 12,
+    width: '85%',
     maxWidth: 400,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.text,
   },
   closeButton: {
     padding: 4,
   },
+  modalBody: {
+    padding: 16,
+  },
   modalText: {
     fontSize: 16,
     color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
-  modalButtonContainer: {
-    marginTop: theme.spacing.lg,
-  }
+  privacyPolicyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  checkboxContainer: {
+    marginRight: 12,
+  },
+  privacyPolicyText: {
+    fontSize: 14,
+    color: theme.colors.text,
+    flex: 1,
+  },
+  privacyPolicyLink: {
+    color: theme.colors.gold,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  privacyPolicyError: {
+    marginTop: -16,
+    marginBottom: 16,
+  },
 });

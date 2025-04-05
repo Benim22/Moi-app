@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "expo-app",
+    "name": "Moi Sushi",
     "slug": "expo-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "moisushi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -13,18 +13,37 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "notification": {
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#D4AF37",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Moi Sushi",
+      "iosDisplayInForeground": true
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.moisushi.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.expoapp"
+      "package": "com.moisushi.app",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#D4AF37",
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

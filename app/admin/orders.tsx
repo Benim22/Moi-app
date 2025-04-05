@@ -13,6 +13,7 @@ import { theme } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { Eye, Clock, Check, X } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
+import { sendOrderStatusNotification } from '@/lib/notifications';
 
 // Definiera OrderItem enligt tabellstrukturen i bilden
 interface OrderItem {
@@ -101,12 +102,27 @@ export default function AdminOrdersScreen() {
   // Uppdatera orderstatus
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // Hämta först order för att få user_id
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('user_id')
+        .eq('id', orderId)
+        .single();
+      
+      if (orderError) throw orderError;
+      
+      // Uppdatera status
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId);
       
       if (error) throw error;
+      
+      // Skicka notifikation till användaren
+      if (orderData?.user_id) {
+        await sendOrderStatusNotification(orderData.user_id, orderId, newStatus);
+      }
       
       // Uppdatera lokal state
       setOrders(orders.map(order => 

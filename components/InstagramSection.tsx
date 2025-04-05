@@ -1,21 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Dimensions } from 'react-native';
 import { theme } from '@/constants/theme';
 import { ExternalLink, Instagram } from 'lucide-react-native';
-
-const instagramImages = [
-  'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1617196034183-421b4917c92d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1553621042-f6e147245754?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1559410545-0bdcd187e323?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1534482421-64566f976cfa?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1563612116625-9a3203a7c486?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-];
+import { WebView } from 'react-native-webview';
+import { Linking } from 'react-native';
 
 export default function InstagramSection() {
   const openInstagram = () => {
     Linking.openURL('https://www.instagram.com/moisushi.se');
   };
+
+  const ELFSIGHT_EMBED_CODE = `
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: ${theme.colors.background};
+          }
+        </style>
+      </head>
+      <body>
+        <script src="https://static.elfsight.com/platform/platform.js" data-use-service-core defer></script>
+        <div class="elfsight-app-4ba0712a-eb22-40e6-a631-0335ffc36416"></div>
+      </body>
+    </html>
+  `;
+
+  const windowHeight = Dimensions.get('window').height;
+  const widgetHeight = 400; // Justera höjden efter behov
 
   return (
     <View style={styles.container}>
@@ -25,12 +42,15 @@ export default function InstagramSection() {
       </View>
       <Text style={styles.subtitle}>Följ oss på Instagram</Text>
       
-      <View style={styles.grid}>
-        {instagramImages.map((image, index) => (
-          <View key={index} style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.image} />
-          </View>
-        ))}
+      <View style={[styles.widgetContainer, { height: widgetHeight }]}>
+        <WebView
+          originWhitelist={['*']}
+          source={{ html: ELFSIGHT_EMBED_CODE }}
+          style={styles.webview}
+          scrollEnabled={true}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+        />
       </View>
       
       <Pressable style={styles.button} onPress={openInstagram}>
@@ -62,23 +82,18 @@ const styles = StyleSheet.create({
     color: theme.colors.subtext,
     marginBottom: theme.spacing.lg,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.lg,
-  },
-  imageContainer: {
-    width: '48%',
-    aspectRatio: 1,
-    marginBottom: theme.spacing.md,
+  widgetContainer: {
+    width: '100%',
     borderRadius: theme.borderRadius.sm,
     overflow: 'hidden',
+    marginBottom: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  image: {
+  webview: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    backgroundColor: theme.colors.background,
   },
   button: {
     flexDirection: 'row',

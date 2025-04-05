@@ -35,3 +35,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 .vercel
+
+# Native builds for EAS
+/android
+/ios

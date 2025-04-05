@@ -8,21 +8,14 @@ import { theme } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HistorySection from '@/components/HistorySection';
 import InstagramSection from '@/components/InstagramSection';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEvent } from 'expo';
+import { Video, ResizeMode } from 'expo-av';
 import Footer from '@/components/Footer';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const videoSource = 'https://videos.pexels.com/video-files/3295852/3295852-uhd_2732_1440_25fps.mp4';
+  const videoRef = useRef(null);
   
-  // Använd useVideoPlayer hook för att skapa en videospelare
-  const player = useVideoPlayer(videoSource, player => {
-    player.loop = true;
-    player.muted = true;
-    player.play();
-  });
-
+  // Navigeringsfunktioner
   const navigateToMenu = () => {
     router.push('/menu');
   };
@@ -36,13 +29,18 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={globalStyles.container} edges={['bottom']}>
-      <ScrollView style={globalStyles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={[globalStyles.container, { paddingTop: 0 }]} edges={['bottom']}>
+      <ScrollView style={[globalStyles.container]} showsVerticalScrollIndicator={false}>
         <View style={styles.heroContainer}>
           {Platform.OS !== 'web' ? (
-            <VideoView
+            <Video
+              ref={videoRef}
+              source={{ uri: 'https://videos.pexels.com/video-files/3295852/3295852-uhd_2732_1440_25fps.mp4' }}
               style={styles.backgroundVideo}
-              player={player}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isLooping
+              isMuted
             />
           ) : (
             <View style={styles.webVideoContainer}>
@@ -162,6 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
+    marginTop: 0,
   },
   backgroundVideo: {
     position: 'absolute',
@@ -171,6 +170,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: '100%',
+    zIndex: 1,
   },
   webVideoContainer: {
     position: 'absolute',
@@ -181,19 +181,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflow: 'hidden',
+    zIndex: 1,
   },
   overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.xl,
+    zIndex: 2,
   },
   logoImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: theme.spacing.lg,
   },
   heroTitle: {
