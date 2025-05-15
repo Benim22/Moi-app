@@ -4,14 +4,14 @@ import { theme } from '@/constants/theme';
 
 export default function Footer() {
   const handleLucelliPress = () => {
-    Linking.openURL('https://lucelli.se');
+    Linking.openURL('https://skaply.se');
   };
 
   return (
     <View style={styles.developerSection}>
       <Pressable onPress={handleLucelliPress}>
         <Text style={[styles.developerText, styles.linkText]}>
-          Utvecklad av Lucelli
+          Utvecklad av Skaply
         </Text>
       </Pressable>
       <View style={styles.copyrightContainer}>

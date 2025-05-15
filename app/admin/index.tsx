@@ -29,9 +29,11 @@ import {
   Search,
   Filter,
   X,
-  ChevronDown
+  ChevronDown,
+  Image as ImageIcon
 } from 'lucide-react-native';
 import { useMenuStore } from '@/store/menu-store';
+import ImagePickerModal from '@/components/Admin/ImagePickerModal';
 
 // Våra lokala typer
 type MenuItem = {
@@ -89,6 +91,7 @@ const AddMenuItemModal = ({
   const [protein, setProtein] = useState('0');
   const [carbs, setCarbs] = useState('0');
   const [fat, setFat] = useState('0');
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Lista över befintliga kategorier
   const categories = [
@@ -126,6 +129,7 @@ const AddMenuItemModal = ({
     setProtein('0');
     setCarbs('0');
     setFat('0');
+    setShowImagePicker(false);
   };
 
   const handleAddNewCategory = () => {
@@ -189,6 +193,11 @@ const AddMenuItemModal = ({
     }
   };
 
+  const handleImageSelected = (url: string) => {
+    setImage(url);
+    setShowImagePicker(false);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -246,20 +255,33 @@ const AddMenuItemModal = ({
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Bild URL</Text>
-              <TextInput
-                style={styles.formInput}
-                value={image}
-                onChangeText={setImage}
-                placeholder="URL till bild"
-                placeholderTextColor={theme.colors.subtext}
-              />
-              {image && (
+              <Text style={styles.formLabel}>Bild</Text>
+              <View style={styles.imageInputContainer}>
+                <TextInput
+                  style={styles.formInputWithButton}
+                  value={image}
+                  onChangeText={setImage}
+                  placeholder="URL till bild eller välj från bibliotek"
+                  placeholderTextColor={theme.colors.subtext}
+                />
+                <TouchableOpacity 
+                  style={styles.imagePickerButton} 
+                  onPress={() => setShowImagePicker(true)}
+                >
+                  <ImageIcon size={20} color={theme.colors.gold} />
+                </TouchableOpacity>
+              </View>
+              {image ? (
                 <Image 
                   source={{ uri: image }} 
                   style={styles.previewImage} 
                   resizeMode="cover"
                 />
+              ) : (
+                <View style={[styles.previewImage, styles.imagePlaceholder]}>
+                  <ImageIcon size={40} color={theme.colors.subtext} />
+                  <Text style={styles.imagePlaceholderText}>Ingen bild vald</Text>
+                </View>
               )}
             </View>
 
@@ -496,6 +518,12 @@ const AddMenuItemModal = ({
               )}
             </TouchableOpacity>
           </View>
+
+          <ImagePickerModal
+            visible={showImagePicker}
+            onClose={() => setShowImagePicker(false)}
+            onImageSelect={handleImageSelected}
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -577,6 +605,7 @@ const EditMenuItemModal = ({
   const [protein, setProtein] = useState(0);
   const [carbs, setCarbs] = useState(0);
   const [fat, setFat] = useState(0);
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Lista över befintliga kategorier
   const categories = [
@@ -596,7 +625,6 @@ const EditMenuItemModal = ({
     'Veganskt'
   ];
 
-  // Initialize form fields when menuItem changes
   useEffect(() => {
     if (menuItem) {
       setName(menuItem.name || '');
@@ -617,8 +645,32 @@ const EditMenuItemModal = ({
         setProtein(menuItem.nutritional_info.protein || 0);
         setCarbs(menuItem.nutritional_info.carbs || 0);
         setFat(menuItem.nutritional_info.fat || 0);
+      } else {
+        // Sätt defaultvärden om nutritional_info är null/undefined
+        setCalories(0);
+        setProtein(0);
+        setCarbs(0);
+        setFat(0);
       }
+    } else {
+        // Återställ formuläret om inget menuItem är valt (t.ex. när modalen stängs och öppnas igen)
+        setName('');
+        setDescription('');
+        setPrice('');
+        setImage('');
+        setCategory('');
+        setPopular(false);
+        setIngredients('');
+        setAllergens('');
+        setTags('');
+        setPreparation_time('15-20 min');
+        setSpicy_level(0);
+        setCalories(0);
+        setProtein(0);
+        setCarbs(0);
+        setFat(0);
     }
+    setShowImagePicker(false); // Se till att bildväljaren är stängd när item ändras
   }, [menuItem]);
 
   const handleAddNewCategory = () => {
@@ -630,6 +682,11 @@ const EditMenuItemModal = ({
     } else {
       Alert.alert('Fel', 'Kategorinamn får inte vara tomt');
     }
+  };
+
+  const handleImageSelected = (url: string) => {
+    setImage(url);
+    setShowImagePicker(false);
   };
 
   const handleSubmit = async () => {
@@ -748,20 +805,33 @@ const EditMenuItemModal = ({
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Bild URL</Text>
-              <TextInput
-                style={styles.formInput}
-                value={image}
-                onChangeText={setImage}
-                placeholder="URL till bild"
-                placeholderTextColor={theme.colors.subtext}
-              />
-              {image && (
+              <Text style={styles.formLabel}>Bild</Text>
+              <View style={styles.imageInputContainer}>
+                <TextInput
+                  style={styles.formInputWithButton}
+                  value={image}
+                  onChangeText={setImage}
+                  placeholder="URL till bild eller välj från bibliotek"
+                  placeholderTextColor={theme.colors.subtext}
+                />
+                <TouchableOpacity 
+                  style={styles.imagePickerButton} 
+                  onPress={() => setShowImagePicker(true)}
+                >
+                  <ImageIcon size={20} color={theme.colors.gold} />
+                </TouchableOpacity>
+              </View>
+              {image ? (
                 <Image 
                   source={{ uri: image }} 
                   style={styles.previewImage} 
                   resizeMode="cover"
                 />
+              ) : (
+                <View style={[styles.previewImage, styles.imagePlaceholder]}>
+                  <ImageIcon size={40} color={theme.colors.subtext} />
+                  <Text style={styles.imagePlaceholderText}>Ingen bild vald</Text>
+                </View>
               )}
             </View>
 
@@ -998,6 +1068,12 @@ const EditMenuItemModal = ({
               )}
             </TouchableOpacity>
           </View>
+
+          <ImagePickerModal
+            visible={showImagePicker}
+            onClose={() => setShowImagePicker(false)}
+            onImageSelect={handleImageSelected}
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -1886,8 +1962,11 @@ const styles = StyleSheet.create({
   previewImage: {
     width: '100%',
     height: 150,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     marginTop: 10,
+    backgroundColor: theme.colors.inputBg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   categorySelector: {
     backgroundColor: theme.colors.inputBg,
@@ -2094,5 +2173,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text,
     marginBottom: 5,
+  },
+  imageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  formInputWithButton: {
+    flex: 1,
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: theme.colors.text,
+    height: 45,
+  },
+  imagePickerButton: {
+    backgroundColor: theme.colors.inputBg,
+    padding: 10,
+    height: 45,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePickerButtonText: {
+    color: theme.colors.gold,
+    fontWeight: 'bold',
+  },
+  imagePlaceholder: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderStyle: 'dashed',
+  },
+  imagePlaceholderText: {
+    color: theme.colors.subtext,
+    marginTop: 5,
   },
 });
