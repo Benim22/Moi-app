@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Alert, Platform, ToastAndroid } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Platform, ToastAndroid } from 'react-native';
 import { theme } from '@/constants/theme';
 import { MenuItem } from '@/store/menu-store';
 import { Plus, Heart, Info, Check } from 'lucide-react-native';
 import { useCartStore } from '@/store/cart-store';
 import { useFavoritesStore } from '@/store/favorites-store';
 import { useUserStore } from '@/store/user-store';
+import OptimizedImage from '@/components/OptimizedImage';
 
 interface MenuCardProps {
   item: MenuItem;
@@ -77,7 +78,17 @@ export default function MenuCard({ item, onPress, onInfoPress }: MenuCardProps) 
   return (
     <Pressable onPress={onPress} style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: item.image }} style={styles.image} />
+        <OptimizedImage 
+          source={{ uri: item.image }} 
+          style={styles.image}
+          width={400}
+          height={240}
+          quality={70}
+          resize="cover"
+          priority="high"
+          cachePolicy="disk"
+          onError={() => console.error(`Kunde inte ladda bild för ${item.name}`)}
+        />
         {(item.isPopular || item.popular) && (
           <View style={styles.popularTag}>
             <Text style={styles.popularTagText}>Populär</Text>

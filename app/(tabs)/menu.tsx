@@ -10,6 +10,8 @@ import { useMenuStore, MenuItem } from '@/store/menu-store';
 import { X, Clock, Plus } from 'lucide-react-native';
 import { useCartStore } from '@/store/cart-store';
 import Footer from '@/components/Footer';
+import { useImagePreloader } from '@/hooks/useImagePreloader';
+import { useNotificationStore } from '@/store/notification-store';
 
 // Definiera lokal menypetyp för att undvika typkonflikter
 type MenuItemLocal = {
@@ -280,6 +282,25 @@ const MenuItemModal = ({ isVisible, onClose, item, formatCategoryName }: {
   );
 };
 
+// Fast önskad ordning på kategorierna enligt användarens lista
+// OBS: Lägg till både 'friterad sushi' och 'friterade rullar' för att täcka båda varianter
+const CATEGORY_ORDER = [
+  'sushi',
+  'poké bowl',
+  'friterad sushi', // backend-variant
+  'friterade rullar', // visningsnamn
+  'mix',
+  'nigiri',
+  'sashimi',
+  'varmrätter',
+  'vegetariskt',
+  'veganskt',
+  'barnmeny',
+  'såser',
+  'tillbehör',
+  'drycker',
+];
+
 export default function MenuScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filteredItems, setFilteredItems] = useState<MenuItemLocal[]>([]);
@@ -290,6 +311,30 @@ export default function MenuScreen() {
   // Använd MenuStore
   const { items: menuItems, categories: menuCategories, isLoading: loading, loadMenu } = useMenuStore();
 
+  // Förladda viktiga bilder för snabbare laddning
+  useImagePreloader({ 
+    items: menuItems, 
+    priority: 'high', 
+    maxPreload: 15 // Förladda de första 15 bilderna
+  });
+
+  // Warm up cache för populära bilder när menyn laddats
+  useEffect(() => {
+    if (menuItems.length > 0) {
+      const popularImages = menuItems
+        .filter(item => item.popular && item.image)
+        .map(item => item.image)
+        .slice(0, 8); // Top 8 populära
+
+      if (popularImages.length > 0) {
+        // Kör async utan att blockera UI
+        import('@/utils/imageCache').then(({ ImageCacheManager }) => {
+          ImageCacheManager.warmUpCache(popularImages);
+        });
+      }
+    }
+  }, [menuItems]);
+
   // Hämta menyn från store när komponenten laddas
   useEffect(() => {
     loadMenu();
@@ -297,10 +342,7 @@ export default function MenuScreen() {
 
   // Formatera kategorinamn för visning
   const formatCategoryName = (category: string): string => {
-    // Om kategorin är tom, returnera "Alla"
     if (!category) return "Alla";
-    
-    // Hantera specialfall
     switch (category.toLowerCase()) {
       case 'moisrolls':
         return 'Moi\'s Rolls';
@@ -319,30 +361,21 @@ export default function MenuScreen() {
   // Uppdatera kategorilistan när menuCategories ändras
   useEffect(() => {
     if (menuCategories && menuCategories.length > 0) {
-      // Sortera kategorier så att Tillbehör och Drycker hamnar sist
+      // Sortera kategorier enligt fast ordning
       const sortedCategories = [...menuCategories].sort((a, b) => {
-        // Definiera ordningen för specialkategorier
-        const specialCategories = ['tillbehör', 'drycker'];
-        const aIsSpecial = specialCategories.includes(a.toLowerCase());
-        const bIsSpecial = specialCategories.includes(b.toLowerCase());
-        
-        if (aIsSpecial && !bIsSpecial) return 1;
-        if (!aIsSpecial && bIsSpecial) return -1;
-        if (aIsSpecial && bIsSpecial) {
-          // Om båda är specialkategorier, sortera dem inbördes
-          return specialCategories.indexOf(a.toLowerCase()) - specialCategories.indexOf(b.toLowerCase());
-        }
-        return 0;
+        const aIndex = CATEGORY_ORDER.indexOf(a.toLowerCase());
+        const bIndex = CATEGORY_ORDER.indexOf(b.toLowerCase());
+        if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
       });
 
       const formattedCategories = sortedCategories.map(category => ({
         id: category,
         name: formatCategoryName(category)
       }));
-      
       setCategories(formattedCategories);
-      
-      // Sätt standard vald kategori om det finns kategorier
       if (formattedCategories.length > 0 && !selectedCategory) {
         setSelectedCategory(formattedCategories[0].id);
       }
@@ -385,7 +418,7 @@ export default function MenuScreen() {
         <ScrollView style={globalStyles.container}>
           <View style={styles.header}>
             <Image 
-              source={{ uri: 'https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67ccd62d00368913f38e/view?project=678bfed4002a8a6174c4' }} 
+              source={require('@/assets/images/logo.png')}
               style={styles.logoImage}
               onError={() => console.error('Kunde inte ladda logotypen')}
             />
@@ -490,6 +523,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.subtext,
     textAlign: 'center',
+  },
+  
+  notificationTestButton: {
+    backgroundColor: theme.colors.gold,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: theme.borderRadius.sm,
+    marginTop: theme.spacing.md,
+  },
+  notificationTestText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 14,
   },
   
   // Modal stilar

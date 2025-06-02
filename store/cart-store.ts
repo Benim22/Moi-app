@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MenuItem } from '@/store/menu-store';
+import { useNotificationStore } from '@/store/notification-store';
 
 export interface CartItem {
   id: string;
@@ -19,6 +20,7 @@ interface CartState {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
+  checkout: () => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -43,13 +45,37 @@ export const useCartStore = create<CartState>()(
             items: [...items, { id: menuItem.id, menuItem, quantity: 1 }]
           });
         }
+
+        // Visa notifikation när produkt läggs till
+        const totalItems = get().getTotalItems();
+        useNotificationStore.getState().showSuccess(
+          'Tillagd i kundkorgen! 🛒',
+          `${menuItem.name} har lagts till. Totalt: ${totalItems} produkter`,
+          {
+            label: 'Visa kundkorg',
+            onPress: () => {
+              // Navigera till cart - implementation kommer senare
+              console.log('Navigera till kundkorg');
+            },
+          }
+        );
       },
       
       removeFromCart: (id: string) => {
         const { items } = get();
+        const removedItem = items.find(item => item.id === id);
+        
         set({
           items: items.filter(item => item.id !== id)
         });
+
+        // Visa notifikation när produkt tas bort
+        if (removedItem) {
+          useNotificationStore.getState().showInfo(
+            'Borttagen från kundkorgen',
+            `${removedItem.menuItem.name} har tagits bort`
+          );
+        }
       },
       
       updateQuantity: (id: string, quantity: number) => {
@@ -100,6 +126,12 @@ export const useCartStore = create<CartState>()(
       
       clearCart: () => {
         set({ items: [] });
+        
+        // Visa notifikation när kundkorgen rensas
+        useNotificationStore.getState().showInfo(
+          'Kundkorg rensad',
+          'Alla produkter har tagits bort från kundkorgen'
+        );
       },
       
       getTotalPrice: () => {
@@ -110,6 +142,29 @@ export const useCartStore = create<CartState>()(
       getTotalItems: () => {
         const { items } = get();
         return items.reduce((total, item) => total + item.quantity, 0);
+      },
+
+      checkout: () => {
+        const { items } = get();
+        const orderId = Date.now().toString();
+        const totalPrice = get().getTotalPrice();
+        
+        // Simulera checkout-process
+        useNotificationStore.getState().showOrderConfirmation(orderId, 25);
+        
+        // Rensa kundkorgen efter checkout
+        set({ items: [] });
+        
+        // Simulera order ready efter 3 sekunder (för demo)
+        setTimeout(() => {
+          useNotificationStore.getState().showOrderReady(orderId, false);
+        }, 3000);
+
+        // Simulera loyalty points efter 5 sekunder (för demo)
+        setTimeout(() => {
+          const pointsEarned = Math.floor(totalPrice / 10); // 1 poäng per 10kr
+          useNotificationStore.getState().showLoyaltyReward(pointsEarned, pointsEarned + 45);
+        }, 5000);
       }
     }),
     {

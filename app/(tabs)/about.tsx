@@ -27,7 +27,7 @@ export default function AboutScreen() {
       <ScrollView style={globalStyles.container}>
         <View style={styles.header}>
           <Image 
-            source={{ uri: 'https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67ccd62d00368913f38e/view?project=678bfed4002a8a6174c4' }} 
+            source={require('@/assets/images/logo.png')}
             style={styles.logoImage}
             onError={() => console.error('Kunde inte ladda logotypen')}
           />

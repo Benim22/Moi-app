@@ -30,10 +30,13 @@ import {
   Filter,
   X,
   ChevronDown,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Bell
 } from 'lucide-react-native';
 import { useMenuStore } from '@/store/menu-store';
 import ImagePickerModal from '@/components/Admin/ImagePickerModal';
+import { useNotificationStore } from '@/store/notification-store';
+import { NotificationManager } from '@/utils/NotificationManager';
 
 // Våra lokala typer
 type MenuItem = {
@@ -1193,6 +1196,21 @@ export default function AdminScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [filteredItems, setFilteredItems] = useState<ExtendedMenuItem[]>([]);
+  
+  // Notifikationshantering
+  const { showSuccess, showError, showInfo, showPromo } = useNotificationStore();
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState<'success' | 'error' | 'info' | 'promo'>('info');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  
+  // Avancerade notifikationsinställningar
+  const [schedulingType, setSchedulingType] = useState<'immediate' | 'scheduled'>('immediate');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [showSchedulingDropdown, setShowSchedulingDropdown] = useState(false);
+  const [enableSound, setEnableSound] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn || !isAdmin) {
@@ -1356,6 +1374,151 @@ export default function AdminScreen() {
       item.category?.toLowerCase().includes(lowercasedQuery)
     );
     setFilteredItems(filtered);
+  };
+
+  // Notifikationshantering
+  const handleSendNotification = () => {
+    if (!notificationTitle.trim() || !notificationMessage.trim()) {
+      Alert.alert('Fel', 'Både titel och meddelande måste fyllas i');
+      return;
+    }
+
+    // Validera schemaläggning om det inte är omedelbart
+    if (schedulingType === 'scheduled' && (!scheduledDate || !scheduledTime)) {
+      Alert.alert('Fel', 'Datum och tid måste anges för schemalagda notifikationer');
+      return;
+    }
+
+    // Skicka in-app notifikation baserat på schemaläggning
+    if (schedulingType === 'immediate') {
+      sendImmediateNotification();
+    } else if (schedulingType === 'scheduled') {
+      scheduleNotificationForLater();
+    }
+  };
+
+  const sendImmediateNotification = async () => {
+    // Kontrollera och begär notifikationsbehörigheter
+    const hasPermission = await NotificationManager.requestPermissions();
+    
+    if (!hasPermission) {
+      Alert.alert(
+        'Behörigheter krävs', 
+        'För att skicka notifikationer behöver appen behörighet att visa notifikationer. Aktivera detta i inställningar.',
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Öppna inställningar', onPress: () => console.log('Öppna inställningar') }
+        ]
+      );
+      return;
+    }
+
+    // Skicka push notifikation som visas på hemskärmen
+    const notificationData = {
+      title: notificationTitle,
+      body: notificationMessage,
+      data: { 
+        type: notificationType === 'success' || notificationType === 'error' ? 'order' : notificationType,
+        targetAudience: 'all',
+        priority: 'normal',
+        sound: enableSound
+      },
+    };
+
+    // Skicka push-notifikation som visas på hemskärmen
+    const notificationId = await NotificationManager.sendLocalNotification(notificationData);
+    
+    if (notificationId) {
+      console.log('✅ Push-notifikation skickad med ID:', notificationId);
+      
+      // Visa även in-app notifikation för omedelbar feedback
+      switch (notificationType) {
+        case 'success':
+          showSuccess(notificationTitle, notificationMessage);
+          break;
+        case 'error':
+          showError(notificationTitle, notificationMessage);
+          break;
+        case 'info':
+          showInfo(notificationTitle, notificationMessage);
+          break;
+        case 'promo':
+          showPromo(notificationTitle, notificationMessage, {
+            label: 'Visa mer',
+            onPress: () => console.log('Promo-knapp tryckt'),
+          });
+          break;
+      }
+
+      resetNotificationForm();
+      Alert.alert('Skickat', 'Push-notifikationen med Moi-logotyp har skickats och kommer att visas på hemskärmen');
+    } else {
+      Alert.alert('Fel', 'Kunde inte skicka notifikationen. Kontrollera konsolen för mer information.');
+    }
+  };
+
+  const scheduleNotificationForLater = () => {
+    const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+    
+    if (scheduledDateTime <= new Date()) {
+      Alert.alert('Fel', 'Schemalagd tid måste vara i framtiden');
+      return;
+    }
+
+    // Här skulle man integrera med en backend för att schemalägga riktiga push-notifikationer
+    console.log('Schemaläggning av notifikation:', {
+      title: notificationTitle,
+      message: notificationMessage,
+      scheduledFor: scheduledDateTime,
+      audience: 'all',
+      type: notificationType
+    });
+
+    resetNotificationForm();
+    Alert.alert('Schemalagd', `Notifikationen kommer att skickas ${scheduledDateTime.toLocaleString('sv-SE')}`);
+  };
+
+  const resetNotificationForm = () => {
+    setNotificationTitle('');
+    setNotificationMessage('');
+    setNotificationType('info');
+    setSchedulingType('immediate');
+    setScheduledDate('');
+    setScheduledTime('');
+    setEnableSound(true);
+  };
+
+  const getNotificationTypeLabel = (type: string) => {
+    switch (type) {
+      case 'success': return 'Framgång';
+      case 'error': return 'Fel';
+      case 'info': return 'Information';
+      case 'promo': return 'Erbjudande';
+      default: return 'Information';
+    }
+  };
+
+  const getSchedulingLabel = (type: 'immediate' | 'scheduled') => {
+    switch (type) {
+      case 'immediate': return 'Skicka nu';
+      case 'scheduled': return 'Schemalägg';
+      default: return 'Skicka nu';
+    }
+  };
+
+  const getPriorityLabel = (priority: 'low' | 'normal' | 'high') => {
+    switch (priority) {
+      case 'low': return 'Låg prioritet';
+      case 'normal': return 'Normal prioritet';
+      case 'high': return 'Hög prioritet';
+      default: return 'Normal prioritet';
+    }
+  };
+
+  const applyTemplate = (title: string, message: string, type: 'success' | 'error' | 'info' | 'promo') => {
+    setNotificationTitle(title);
+    setNotificationMessage(message);
+    setNotificationType(type);
   };
 
   const renderAdminHome = () => {
@@ -1543,6 +1706,285 @@ export default function AdminScreen() {
             </TouchableOpacity>
           </View>
         );
+      case 'notifications':
+        return (
+          <View style={styles.contentContainer}>
+            <ScrollView style={styles.notificationForm}>
+              <Text style={styles.sectionTitle}>Skicka notifikation</Text>
+              <Text style={styles.sectionDescription}>
+                Skicka meddelanden till alla appanvändare med avancerade inställningar
+              </Text>
+
+              {/* Schemaläggningstyp */}
+              <Text style={styles.inputLabel}>Schemaläggning</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowSchedulingDropdown(!showSchedulingDropdown)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {getSchedulingLabel(schedulingType)}
+                </Text>
+                <ChevronDown size={20} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              {showSchedulingDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {['immediate', 'scheduled'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setSchedulingType(type as any);
+                        setShowSchedulingDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>
+                        {getSchedulingLabel(type as any)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Schemaläggningsdetaljer */}
+              {schedulingType === 'scheduled' && (
+                <View style={styles.schedulingDetails}>
+                  <Text style={styles.inputLabel}>Datum</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="ÅÅÅÅ-MM-DD"
+                    placeholderTextColor={theme.colors.subtext}
+                    value={scheduledDate}
+                    onChangeText={setScheduledDate}
+                  />
+                  
+                  <Text style={styles.inputLabel}>Tid</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="HH:MM"
+                    placeholderTextColor={theme.colors.subtext}
+                    value={scheduledTime}
+                    onChangeText={setScheduledTime}
+                  />
+                </View>
+              )}
+
+              {/* Notifikationstyp */}
+              <Text style={styles.inputLabel}>Typ av notifikation</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {getNotificationTypeLabel(notificationType)}
+                </Text>
+                <ChevronDown size={20} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              {showTypeDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {['info', 'success', 'error', 'promo'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setNotificationType(type as any);
+                        setShowTypeDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>
+                        {getNotificationTypeLabel(type)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Ljudinställningar */}
+              <View style={styles.soundContainer}>
+                <TouchableOpacity
+                  style={[styles.checkbox, enableSound && styles.checkboxChecked]}
+                  onPress={() => setEnableSound(!enableSound)}
+                >
+                  {enableSound && <Text style={styles.checkMark}>✓</Text>}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>Aktivera ljud</Text>
+              </View>
+
+              {/* Titel */}
+              <Text style={styles.inputLabel}>Titel</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Ange notifikationens titel..."
+                placeholderTextColor={theme.colors.subtext}
+                value={notificationTitle}
+                onChangeText={setNotificationTitle}
+                maxLength={50}
+              />
+              <Text style={styles.characterCount}>{notificationTitle.length}/50</Text>
+
+              {/* Meddelande */}
+              <Text style={styles.inputLabel}>Meddelande</Text>
+              <TextInput
+                style={[styles.textInput, styles.textAreaInput]}
+                placeholder="Skriv ditt meddelande här..."
+                placeholderTextColor={theme.colors.subtext}
+                value={notificationMessage}
+                onChangeText={setNotificationMessage}
+                multiline
+                numberOfLines={4}
+                maxLength={200}
+              />
+              <Text style={styles.characterCount}>{notificationMessage.length}/200</Text>
+
+              {/* Förhandsvisning */}
+              <TouchableOpacity
+                style={styles.previewButton}
+                onPress={() => setShowPreview(!showPreview)}
+              >
+                <Text style={styles.previewButtonText}>
+                  {showPreview ? 'Dölj förhandsvisning' : 'Visa förhandsvisning'}
+                </Text>
+              </TouchableOpacity>
+
+              {showPreview && (
+                <View style={styles.previewContainer}>
+                  <Text style={styles.previewTitle}>Förhandsvisning</Text>
+                  <View style={[styles.previewNotification, 
+                    notificationType === 'success' && styles.previewSuccess,
+                    notificationType === 'error' && styles.previewError,
+                    notificationType === 'promo' && styles.previewPromo,
+                  ]}>
+                    <Text style={styles.previewNotificationTitle}>{notificationTitle || 'Titel'}</Text>
+                    <Text style={styles.previewNotificationMessage}>{notificationMessage || 'Meddelande'}</Text>
+                    <Text style={styles.previewDetails}>
+                      {getSchedulingLabel(schedulingType)} • Alla användare • Normal prioritet
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Skicka-knapp */}
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!notificationTitle.trim() || !notificationMessage.trim()) && styles.sendButtonDisabled
+                ]}
+                onPress={handleSendNotification}
+                disabled={!notificationTitle.trim() || !notificationMessage.trim()}
+              >
+                <Bell size={20} color="#fff" />
+                <Text style={styles.sendButtonText}>
+                  {schedulingType === 'immediate' ? 'Skicka notifikation' : 'Schemalägg notifikation'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Utökade mallar */}
+              <View style={styles.templatesSection}>
+                <Text style={styles.sectionTitle}>Snabbmallar</Text>
+                
+                {/* Erbjudanden */}
+                <Text style={styles.templateCategoryTitle}>🎯 Erbjudanden</Text>
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Specialerbjudande! 🍣', '20% rabatt på alla sushi-rullar idag! Begränsad tid.', 'promo')}
+                >
+                  <Text style={styles.templateButtonText}>Sushi-erbjudande</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Happy Hour! 🥢', 'Köp 2 få 1 gratis på alla drycker mellan 15-17! Missa inte detta!', 'promo')}
+                >
+                  <Text style={styles.templateButtonText}>Happy Hour</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Gratis leverans! 🚚', 'Beställ för minst 300kr och få gratis leverans hela veckan!', 'promo')}
+                >
+                  <Text style={styles.templateButtonText}>Gratis leverans</Text>
+                </TouchableOpacity>
+
+                {/* Information */}
+                <Text style={styles.templateCategoryTitle}>ℹ️ Information</Text>
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Nya rätter tillgängliga! 🎉', 'Vi har uppdaterat vår meny med spännande nya alternativ.', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Ny meny</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Öppettidsändring 📅', 'Observera ändrade öppettider under helger.', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Öppettider</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Helgstängt 🏮', 'Vi är stängda under midsommar 21-23 juni. Välkomna tillbaka måndag!', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Helgstängt</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Underhåll pågår 🔧', 'Vår app kan vara otillgänglig under kort tid för underhåll.', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Tekniskt meddelande</Text>
+                </TouchableOpacity>
+
+                {/* Säsong & Event */}
+                <Text style={styles.templateCategoryTitle}>🎊 Säsong & Event</Text>
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Nyårserbjudande! 🎊', 'Fira det nya året med 25% rabatt på hela menyn! Gäller till 15/1.', 'promo')}
+                >
+                  <Text style={styles.templateButtonText}>Nyår</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Valentinsmeny ❤️', 'Romantisk middag för två! Specialmeny för alla kärlek.', 'promo')}
+                >
+                  <Text style={styles.templateButtonText}>Alla hjärtans dag</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Midsommar specialmeny 🌸', 'Fira midsommar med våra traditionella och moderna rätter!', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Midsommar</Text>
+                </TouchableOpacity>
+
+                {/* Kundrelationer */}
+                <Text style={styles.templateCategoryTitle}>🤝 Kundrelationer</Text>
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Tack för din feedback! 🙏', 'Vi uppskattar din recension och fortsätter att förbättra oss.', 'success')}
+                >
+                  <Text style={styles.templateButtonText}>Tack för feedback</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Vi saknar dig! 😊', 'Det har gått ett tag sedan ditt senaste besök. Kom tillbaka för en specialrabatt!', 'info')}
+                >
+                  <Text style={styles.templateButtonText}>Återkomst</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.templateButton}
+                  onPress={() => applyTemplate('Belöning väntar! 🏆', 'Du har samlat tillräckligt med poäng för en gratis rätt!', 'success')}
+                >
+                  <Text style={styles.templateButtonText}>Belöning</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        );
       default:
         return (
           <View style={styles.contentContainer}>
@@ -1640,6 +2082,24 @@ export default function AdminScreen() {
             Inställningar
           </Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
+          onPress={() => setActiveTab('notifications')}
+        >
+          <Bell 
+            size={24} 
+            color={activeTab === 'notifications' ? theme.colors.gold : theme.colors.text} 
+          />
+          <Text 
+            style={[
+              styles.tabText, 
+              activeTab === 'notifications' && styles.activeTabText
+            ]}
+          >
+            Notiser
+          </Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.header}>
@@ -1648,12 +2108,14 @@ export default function AdminScreen() {
           {activeTab === 'users' && 'Användarhantering'}
           {activeTab === 'orders' && 'Orderhantering'}
           {activeTab === 'settings' && 'Inställningar'}
+          {activeTab === 'notifications' && 'Notifikationshantering'}
         </Text>
         <Text style={styles.subtitle}>
           {activeTab === 'menu' && 'Hantera menyartiklar, priser och kategorier'}
           {activeTab === 'users' && 'Hantera användare och deras behörigheter'}
           {activeTab === 'orders' && 'Hantera och spåra beställningar'}
           {activeTab === 'settings' && 'Hantera restaurangens inställningar'}
+          {activeTab === 'notifications' && 'Skicka meddelanden och erbjudanden till användare'}
         </Text>
       </View>
       
@@ -2212,5 +2674,179 @@ const styles = StyleSheet.create({
   imagePlaceholderText: {
     color: theme.colors.subtext,
     marginTop: 5,
+  },
+  notificationForm: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 16,
+    color: theme.colors.text,
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  dropdownButton: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownButtonText: {
+    color: theme.colors.text,
+    fontWeight: 'bold',
+  },
+  dropdownMenu: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    minHeight: 55,
+  },
+  dropdownItemText: {
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  textInput: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    color: theme.colors.text,
+    marginBottom: 16,
+  },
+  textAreaInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  sendButton: {
+    backgroundColor: theme.colors.gold,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  templatesSection: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  templateButton: {
+    backgroundColor: theme.colors.inputBg,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  templateButtonText: {
+    color: theme.colors.text,
+    fontWeight: 'bold',
+  },
+  templateCategoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  previewButton: {
+    backgroundColor: theme.colors.gold,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  previewButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  previewContainer: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  previewNotification: {
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  previewSuccess: {
+    backgroundColor: 'rgba(50, 205, 50, 0.2)',
+  },
+  previewError: {
+    backgroundColor: 'rgba(255, 0, 0, 0.2)',
+  },
+  previewPromo: {
+    backgroundColor: 'rgba(255, 255, 0, 0.2)',
+  },
+  previewNotificationTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  previewNotificationMessage: {
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  previewDetails: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+  },
+  soundContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+    marginBottom: 8,
+  },
+  schedulingDetails: {
+    backgroundColor: theme.colors.card,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
 });

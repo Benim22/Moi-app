@@ -14,7 +14,7 @@
       "backgroundColor": "#ffffff"
     },
     "notification": {
-      "icon": "./assets/images/notification-icon.png",
+      "icon": "./assets/images/moi-notification-icon.png",
       "color": "#D4AF37",
       "androidMode": "default",
       "androidCollapsedTitle": "Moi Sushi",
@@ -40,13 +40,15 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/notification-icon.png",
+          "icon": "./assets/images/moi-notification-icon.png",
           "color": "#D4AF37",
           "sounds": [
             "./assets/sounds/notification.wav"
           ]
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

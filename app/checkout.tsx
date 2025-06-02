@@ -115,7 +115,7 @@ export default function CheckoutScreen() {
   const HeaderTitle = () => (
     <View style={styles.headerTitleContainer}>
       <Image 
-        source={{ uri: 'https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67ccd62d00368913f38e/view?project=678bfed4002a8a6174c4' }} 
+        source={{ uri: 'https://cdn.discordapp.com/attachments/1371111380865781861/1374028360203632660/Color_logo_-_no_background.png?ex=682c8f21&is=682b3da1&hm=b1eee096f04149550c56054a7d09286a46347bc5a7398146816fcd5fd7cc2e62&' }}
         style={styles.logoImage}
         onError={() => console.error('Kunde inte ladda logotypen')}
       />

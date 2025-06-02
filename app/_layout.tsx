@@ -6,10 +6,19 @@ import { useAuth } from '@/hooks/useAuth';
 import BackButton from '@/components/BackButton';
 import { theme } from '@/constants/theme';
 import NotificationsManager from '@/components/NotificationsManager';
+import { useNotificationStore } from '@/store/notification-store';
+import NotificationContainer from '@/components/NotificationContainer';
 
 export default function RootLayout() {
   // Initialize auth listener
   useAuth();
+
+  const { initializeNotifications } = useNotificationStore();
+
+  useEffect(() => {
+    // Initialisera notifikationssystemet när appen startar
+    initializeNotifications();
+  }, []);
 
   const commonHeaderOptions = {
     headerShown: true,
@@ -71,6 +80,7 @@ export default function RootLayout() {
             title: 'Min profil' 
           }} />
         </Stack>
+        <NotificationContainer />
       </SafeAreaProvider>
     </NotificationsManager>
   );

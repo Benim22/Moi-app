@@ -63,7 +63,7 @@ export default function HomeScreen() {
           
           <View style={styles.overlay}>
             <Image 
-              source={{ uri: 'https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67ccd62d00368913f38e/view?project=678bfed4002a8a6174c4' }} 
+              source={require('@/assets/images/logo.png')}
               style={styles.logoImage}
             />
             
@@ -102,21 +102,21 @@ export default function HomeScreen() {
           <SpecialtyCard
             title="Färsk Sushi"
             description="Handgjord sushi med färska ingredienser av högsta kvalitet"
-            imageUrl="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            imageUrl={require('@/assets/images/magic avokado.jpg')}
             onPress={navigateToMenu}
           />
           
           <SpecialtyCard
             title="Poké Bowls"
             description="Färgglada och näringsrika bowls med smakrika kombinationer"
-            imageUrl="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            imageUrl={require('@/assets/images/crispy chicken.png')}
             onPress={navigateToMenu}
           />
           
           <SpecialtyCard
             title="Helfriterade Maki"
             description="Krispiga friterade maki med unika fyllningar"
-            imageUrl="https://images.unsplash.com/photo-1534482421-64566f976cfa?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            imageUrl={require('@/assets/images/helfriterad salmon.jpg')}
             onPress={navigateToMenu}
           />
         </View>

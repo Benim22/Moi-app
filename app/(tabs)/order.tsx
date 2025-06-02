@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Linking, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Linking, ActivityIndicator, TouchableOpacity, Animated, Easing } from 'react-native';
 import { globalStyles } from '@/constants/theme';
 import { theme } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Footer from '@/components/Footer';
 
-type Location = 'trelleborg' | 'ystad';
+type Location = 'trelleborg' | 'ystad' | 'malmo';
 
 interface LocationLinks {
   [key: string]: {
@@ -26,30 +26,64 @@ interface DeliveryServiceCardProps {
   time: string;
   price: string;
   url: string;
+  index: number;
 }
 
 const LocationSelector = ({ selectedLocation, onSelectLocation }: LocationSelectorProps) => {
   return (
     <View style={styles.locationSelector}>
       <View style={styles.locationOptions}>
-        <Text 
+        <TouchableOpacity 
           style={[
-            styles.locationOption, 
+            styles.locationOptionContainer, 
             selectedLocation === 'trelleborg' && styles.locationOptionSelected
           ]}
           onPress={() => onSelectLocation('trelleborg')}
+          activeOpacity={0.8}
         >
-          Trelleborg
-        </Text>
-        <Text 
+          <Text 
+            style={[
+              styles.locationOption, 
+              selectedLocation === 'trelleborg' && styles.locationOptionTextSelected
+            ]}
+          >
+            Trelleborg
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
           style={[
-            styles.locationOption, 
+            styles.locationOptionContainer, 
             selectedLocation === 'ystad' && styles.locationOptionSelected
           ]}
           onPress={() => onSelectLocation('ystad')}
+          activeOpacity={0.8}
         >
-          Ystad
-        </Text>
+          <Text 
+            style={[
+              styles.locationOption, 
+              selectedLocation === 'ystad' && styles.locationOptionTextSelected
+            ]}
+          >
+            Ystad
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.locationOptionContainer, 
+            selectedLocation === 'malmo' && styles.locationOptionSelected
+          ]}
+          onPress={() => onSelectLocation('malmo')}
+          activeOpacity={0.8}
+        >
+          <Text 
+            style={[
+              styles.locationOption, 
+              selectedLocation === 'malmo' && styles.locationOptionTextSelected
+            ]}
+          >
+            Malmö
+          </Text>
+        </TouchableOpacity>
       </View>
       <Text style={styles.locationSelectorHelp}>
         Välj restaurangplats för att se tillgängliga alternativ
@@ -58,32 +92,65 @@ const LocationSelector = ({ selectedLocation, onSelectLocation }: LocationSelect
   );
 };
 
-const DeliveryServiceCard = ({ name, logo, time, price, url }: DeliveryServiceCardProps) => {
+const DeliveryServiceCard = ({ name, logo, time, price, url, index }: DeliveryServiceCardProps) => {
+  const cardAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Staggered entrance animation
+    Animated.timing(cardAnimation, {
+      toValue: 1,
+      duration: 600,
+      delay: index * 150, // Stagger each card by 150ms
+      easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Smooth easing
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const animatedStyle = {
+    opacity: cardAnimation,
+    transform: [
+      {
+        translateY: cardAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0],
+        }),
+      },
+      {
+        scale: cardAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.95, 1],
+        }),
+      },
+    ],
+  };
+
   return (
-    <TouchableOpacity 
-      style={styles.deliveryServiceCard} 
-      onPress={() => Linking.openURL(url)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.deliveryServiceContent}>
-        <Image 
-          source={{ uri: logo }} 
-          style={styles.deliveryServiceLogo}
-          onError={() => console.error(`Kunde inte ladda logotyp för ${name}`)}
-        />
-        <View style={styles.deliveryServiceInfo}>
-          <Text style={styles.deliveryServiceName}>{name}</Text>
-          <View style={styles.deliveryDetails}>
-            <Text style={styles.deliveryServiceTime}>{time}</Text>
-            <View style={styles.priceDot} />
-            <Text style={styles.deliveryServicePrice}>{price} leveransavgift</Text>
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity 
+        style={styles.deliveryServiceCard} 
+        onPress={() => Linking.openURL(url)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.deliveryServiceContent}>
+          <Image 
+            source={{ uri: logo }} 
+            style={styles.deliveryServiceLogo}
+            onError={() => console.error(`Kunde inte ladda logotyp för ${name}`)}
+          />
+          <View style={styles.deliveryServiceInfo}>
+            <Text style={styles.deliveryServiceName}>{name}</Text>
+            <View style={styles.deliveryDetails}>
+              <Text style={styles.deliveryServiceTime}>{time}</Text>
+              <View style={styles.priceDot} />
+              <Text style={styles.deliveryServicePrice}>{price} leveransavgift</Text>
+            </View>
           </View>
         </View>
-      </View>
-      <View style={styles.orderButtonContainer}>
-        <Text style={styles.deliveryServiceButton}>Beställ</Text>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.orderButtonContainer}>
+          <Text style={styles.deliveryServiceButton}>Beställ</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -91,7 +158,97 @@ export default function OrderScreen() {
   const [selectedLocation, setSelectedLocation] = useState<Location>('trelleborg');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Definiera länkar för olika platser
+  // Enhanced animation values
+  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const fadeAnimation = useRef(new Animated.Value(1)).current;
+  const scaleAnimation = useRef(new Animated.Value(1)).current;
+
+  // Animated styles with improved transitions
+  const animatedContentStyle = {
+    opacity: fadeAnimation,
+    transform: [
+      {
+        translateX: slideAnimation.interpolate({
+          inputRange: [-1, 0, 1],
+          outputRange: [-300, 0, 300],
+        }),
+      },
+      {
+        scale: scaleAnimation,
+      },
+    ],
+  };
+
+  // Enhanced location change with smoother animations
+  const handleLocationChange = (location: Location) => {
+    if (location === selectedLocation) return;
+
+    const direction = getSlideDirection(selectedLocation, location);
+
+    // Start smooth animation sequence
+    Animated.sequence([
+      // 1. Scale down and fade current content
+      Animated.parallel([
+        Animated.timing(fadeAnimation, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnimation, {
+          toValue: 0.9,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnimation, {
+          toValue: direction,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      // Update location
+      setSelectedLocation(location);
+      
+      // Reset animation values for smooth entrance
+      slideAnimation.setValue(-direction);
+      scaleAnimation.setValue(0.9);
+      
+      // Animate new content in with staggered timing
+      Animated.parallel([
+        Animated.timing(slideAnimation, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnimation, {
+          toValue: 1,
+          duration: 500,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnimation, {
+          toValue: 1,
+          duration: 500,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
+  // Helper function to determine slide direction
+  const getSlideDirection = (from: Location, to: Location): number => {
+    const locations = ['trelleborg', 'ystad', 'malmo'];
+    const fromIndex = locations.indexOf(from);
+    const toIndex = locations.indexOf(to);
+    return fromIndex < toIndex ? 1 : -1;
+  };
+
+  // Definiera länkar för olika platser (inklusive Malmö)
   const locationLinks: LocationLinks = {
     trelleborg: {
       foodora: "https://www.foodora.se/restaurant/z1xp/moi-sushi-and-pokebowl",
@@ -99,9 +256,14 @@ export default function OrderScreen() {
       ubereats: "https://ubereats.com"
     },
     ystad: {
-      foodora: "https://www.foodora.se/restaurant/fids/moi-poke-bowl",
+      foodora: "https://www.foodora.se/restaurant/fids/moi-poke-bowl", 
       wolt: "https://wolt.com",
       ubereats: "https://ubereats.com"
+    },
+    malmo: {
+      foodora: "https://www.foodora.se/restaurant/malmo/moi-sushi",
+      wolt: "https://wolt.com/sv/swe/malmo",
+      ubereats: "https://ubereats.com/se/malmo"
     }
   };
 
@@ -116,7 +278,7 @@ export default function OrderScreen() {
     {
       name: "Wolt",
       logo: "https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67a7365400237ee66773/view?project=678bfed4002a8a6174c4",
-      time: "25-40 min",
+      time: "25-40 min", 
       price: "35 kr",
       url: locationLinks[selectedLocation].wolt
     },
@@ -124,7 +286,7 @@ export default function OrderScreen() {
       name: "Uber Eats",
       logo: "https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67a7365b00396bd1708f/view?project=678bfed4002a8a6174c4",
       time: "35-50 min",
-      price: "45 kr",
+      price: "45 kr", 
       url: locationLinks[selectedLocation].ubereats
     }
   ];
@@ -142,7 +304,7 @@ export default function OrderScreen() {
         <ScrollView style={globalStyles.container} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Image 
-              source={{ uri: 'https://cloud.appwrite.io/v1/storage/buckets/678c0f710007dd361cec/files/67ccd62d00368913f38e/view?project=678bfed4002a8a6174c4' }} 
+              source={require('@/assets/images/logo.png')}
               style={styles.logoImage}
               onError={() => console.error('Kunde inte ladda logotypen')}
             />
@@ -154,21 +316,22 @@ export default function OrderScreen() {
 
           <LocationSelector 
             selectedLocation={selectedLocation}
-            onSelectLocation={setSelectedLocation}
+            onSelectLocation={handleLocationChange}
           />
 
-          <View style={styles.deliverySection}>
+          <Animated.View style={[styles.deliverySection, animatedContentStyle]}>
             {deliveryServices.map((service, index) => (
               <DeliveryServiceCard 
-                key={index}
+                key={`${selectedLocation}-${index}`}
                 name={service.name}
                 logo={service.logo}
                 time={service.time}
                 price={service.price}
                 url={service.url}
+                index={index}
               />
             ))}
-          </View>
+          </Animated.View>
 
           <View style={styles.pickupSection}>
             <Text style={styles.sectionTitle}>Föredrar du att hämta själv?</Text>
@@ -296,19 +459,38 @@ const styles = StyleSheet.create({
   locationOptions: {
     flexDirection: 'row',
     backgroundColor: theme.colors.darkCard || theme.colors.card,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     marginBottom: theme.spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  locationOptionContainer: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.borderRadius.lg,
+    marginHorizontal: 2,
   },
   locationOption: {
-    flex: 1,
     textAlign: 'center',
-    paddingVertical: theme.spacing.md,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontSize: 16,
   },
   locationOptionSelected: {
     backgroundColor: theme.colors.gold,
+    shadowColor: theme.colors.gold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  locationOptionTextSelected: {
     color: '#111',
     fontWeight: 'bold',
   },
@@ -316,12 +498,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.subtext,
     textAlign: 'center',
+    marginTop: 4,
   },
   deliveryServiceCard: {
     backgroundColor: theme.colors.darkCard || theme.colors.card,
     borderRadius: theme.borderRadius.lg,
     marginBottom: theme.spacing.md,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   deliveryServiceContent: {
     flexDirection: 'row',
@@ -357,7 +545,7 @@ const styles = StyleSheet.create({
   deliveryServiceTime: {
     fontSize: 14,
     color: theme.colors.gold,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   deliveryServicePrice: {
     fontSize: 14,
@@ -365,7 +553,7 @@ const styles = StyleSheet.create({
   },
   orderButtonContainer: {
     backgroundColor: theme.colors.gold,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   deliveryServiceButton: {

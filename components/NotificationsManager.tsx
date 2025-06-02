@@ -68,10 +68,10 @@ export default function NotificationsManager({ children }: NotificationsManagerP
   const setupNotificationListeners = () => {
     // Städa upp tidigare lyssnare
     if (notificationListener.current) {
-      Notifications.removeNotificationSubscription(notificationListener.current);
+      notificationListener.current.remove();
     }
     if (responseListener.current) {
-      Notifications.removeNotificationSubscription(responseListener.current);
+      responseListener.current.remove();
     }
 
     // Lyssna på inkommande notifikationer
@@ -97,10 +97,10 @@ export default function NotificationsManager({ children }: NotificationsManagerP
     return () => {
       // Städa upp alla lyssnare när komponenten avmonteras
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);
