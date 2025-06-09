@@ -14,8 +14,8 @@ export default function NotificationsManager({ children }: NotificationsManagerP
   const { user, isLoggedIn } = useUserStore();
   const [expoPushToken, setExpoPushToken] = useState<string>('');
   const [notification, setNotification] = useState<Notifications.Notification>();
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription>(null);
+  const responseListener = useRef<Notifications.Subscription>(null);
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function NotificationsManager({ children }: NotificationsManagerP
       }
     }
 
-    appState.current = nextAppState;
+    appState.current = nextAppState as any;
   };
 
   const registerPushNotifications = async () => {

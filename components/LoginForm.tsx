@@ -18,7 +18,11 @@ import { Mail, Lock, User, LogIn, UserPlus, X, CheckCircle, Circle } from 'lucid
 import { supabase } from '@/lib/supabase';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 
-export default function LoginForm() {
+interface LoginFormProps {
+  googleLoginDisabled?: boolean;
+}
+
+export default function LoginForm({ googleLoginDisabled }: LoginFormProps = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

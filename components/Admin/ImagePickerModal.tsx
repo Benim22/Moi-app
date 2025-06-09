@@ -95,19 +95,11 @@ const ImagePickerModal: React.FC<ImagePickerModalProps> = ({
             })
             .map(async (file) => {
               console.log(`[ImagePickerModal] Getting public URL for: ${file.name}`); // Logg 5
-              const { data: publicUrlData, error: urlError } = supabase.storage
+              const { data: publicUrlData } = supabase.storage
                 .from(bucketName)
                 .getPublicUrl(file.name);
               
-              console.log(`[ImagePickerModal] Public URL data for ${file.name}:`, { publicUrl: publicUrlData.publicUrl, urlError }); // Logg 6
-
-              if (urlError) {
-                console.error(`[ImagePickerModal] Error getting public URL for ${file.name}:`, urlError); // Logg 7
-                // Returnera ett objekt som kan filtreras bort senare eller hanteras specifikt
-                // istället för att låta hela Promise.all misslyckas direkt.
-                // Beroende på hur kritiskt det är att varje URL hämtas.
-                // För nu, låt oss logga och fortsätta, publicUrl blir null.
-              }
+                            console.log(`[ImagePickerModal] Public URL data for ${file.name}:`, { publicUrl: publicUrlData.publicUrl }); // Logg 6
 
               return {
                 id: file.id ?? file.name,
@@ -364,7 +356,7 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: '100%',
     height: ITEM_WIDTH * 0.8,
-    borderRadius: theme.borderRadius.xs,
+    borderRadius: 4,
     marginBottom: 5,
   },
   imageName: {

@@ -72,10 +72,7 @@ export class ImageCacheManager {
             ...size,
             resize: 'cover'
           });
-          return Image.prefetch(optimizedUrl, {
-            priority: 'normal',
-            cachePolicy: 'disk'
-          });
+          return Image.prefetch(optimizedUrl, 'disk' as any);
         })
       );
       
@@ -107,10 +104,7 @@ export class ImageCacheManager {
 
       const promises = imageUrls.map(url => {
         const optimizedUrl = this.createOptimizedSupabaseUrl(url, defaultOptions);
-        return Image.prefetch(optimizedUrl, {
-          priority: 'high',
-          cachePolicy: 'disk'
-        });
+        return Image.prefetch(optimizedUrl, 'disk' as any);
       });
       
       await Promise.allSettled(promises);

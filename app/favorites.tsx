@@ -14,7 +14,7 @@ import Footer from '@/components/Footer';
 export default function FavoritesScreen() {
   const { favorites, getFavorites, isLoading, removeFavorite } = useFavoritesStore();
   const { getMenuItemById, loadMenu, items } = useMenuStore();
-  const [favoriteItems, setFavoriteItems] = useState([]);
+  const [favoriteItems, setFavoriteItems] = useState<any[]>([]);
   const router = useRouter();
 
   // Ladda menydata och favoriter när komponenten mountas
@@ -53,7 +53,7 @@ export default function FavoritesScreen() {
     }
   }, [favorites, items]);
 
-  const handleRemoveFavorite = async (favoriteId) => {
+  const handleRemoveFavorite = async (favoriteId: string) => {
     try {
       await removeFavorite(favoriteId);
       // Uppdatera UI direkt efter borttagning

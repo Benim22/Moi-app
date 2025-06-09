@@ -15,6 +15,8 @@ export default {
     subtext: '#666',
     inputBg: '#f9f9f9',
     error: '#FF3B30',
+    primary: '#dcc991',
+    success: '#4CAF50',
   },
   dark: {
     text: '#fff',
@@ -31,5 +33,7 @@ export default {
     buttonText: '#000',
     inputBg: '#1A1A1A',
     error: '#FF453A',
+    primary: '#dcc991',
+    success: '#4CAF50',
   },
 };

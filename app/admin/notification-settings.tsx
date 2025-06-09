@@ -50,7 +50,7 @@ export default function AdminNotificationSettingsScreen() {
     
     try {
       setIsLoading(true);
-      const savedSettings = await getAdminNotificationSettings(user.id);
+      const savedSettings = await getAdminNotificationSettings();
       
       const notificationSettings: NotificationSettingItem[] = [
         {
@@ -93,11 +93,11 @@ export default function AdminNotificationSettingsScreen() {
       setIsSaving(true);
       
       const promises = settings.map(setting =>
-        updateAdminNotificationSetting(user.id, setting.type, setting.enabled)
+        updateAdminNotificationSetting(setting.type, setting.enabled)
       );
       
       const results = await Promise.all(promises);
-      const allSuccessful = results.every(result => result);
+      const allSuccessful = results.every((result: boolean) => result);
       
       if (allSuccessful) {
         Alert.alert('Sparat', 'Notifikationsinställningarna har sparats.');

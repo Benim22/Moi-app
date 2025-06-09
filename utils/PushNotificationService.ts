@@ -192,4 +192,58 @@ export class PushNotificationService {
 
     await this.notifyUser(userId, payload);
   }
+
+  /**
+   * Notifiera admins om avbruten bokning
+   */
+  static async notifyAdminsBookingCancelled(booking: {
+    id: string;
+    name: string;
+    date: string;
+    time: string;
+    guests: string;
+  }): Promise<void> {
+    const payload: PushNotificationPayload = {
+      title: '🚫 Bokning avbruten',
+      body: `${booking.name} har avbrutit sin bokning för ${booking.guests} personer den ${booking.date} kl ${booking.time}`,
+      data: {
+        type: 'booking',
+        booking_id: booking.id,
+        action: 'cancelled_booking'
+      },
+      sound: true,
+      priority: 'high'
+    };
+
+    await this.notifyAdmins(payload);
+  }
+
+  /**
+   * Notifiera admins om ändrad bokning
+   */
+  static async notifyAdminsBookingUpdated(booking: {
+    id: string;
+    name: string;
+    date: string;
+    time: string;
+    guests: string;
+    changes: any;
+  }): Promise<void> {
+    const changedFields = Object.keys(booking.changes).join(', ');
+    
+    const payload: PushNotificationPayload = {
+      title: '✏️ Bokning ändrad',
+      body: `${booking.name} har ändrat sin bokning för ${booking.date} kl ${booking.time}. Ändrade fält: ${changedFields}`,
+      data: {
+        type: 'booking',
+        booking_id: booking.id,
+        action: 'updated_booking',
+        changes: booking.changes
+      },
+      sound: true,
+      priority: 'high'
+    };
+
+    await this.notifyAdmins(payload);
+  }
 } 

@@ -18,7 +18,7 @@ export default function SpecialtyCard({ title, description, imageUrl, onPress }:
   return (
     <Pressable style={styles.container} onPress={onPress}>
       <OptimizedImage 
-        source={imageSource} 
+        source={imageSource as any} 
         style={styles.image}
         width={600}
         height={300}
@@ -62,9 +62,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '60%', // Bara nedre 60% av bilden
-    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-    // För React Native använder vi detta istället:
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   content: {

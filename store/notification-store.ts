@@ -158,7 +158,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     
     if (settings.promosEnabled) {
       // Skicka bara push notification
-      NotificationManager.sendPromoNotification(title, message);
+      NotificationManager.sendPromotion(title, message);
     }
   },
 })); 

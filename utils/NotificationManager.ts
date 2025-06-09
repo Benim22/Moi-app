@@ -238,7 +238,7 @@ export class NotificationManager {
       }
 
       // Lägg till Moi-logotyp för iOS notifikationer
-      let attachments: Notifications.NotificationAttachment[] = [];
+      let attachments: any[] = [];
       
       if (Platform.OS === 'ios') {
         try {
@@ -363,12 +363,10 @@ export class NotificationManager {
         },
       },
       {
-        type: 'calendar',
-        repeats: true,
         hour: 11,
         minute: 30,
-        weekday: [2, 3, 4, 5, 6], // Måndag-Fredag
-      }
+        repeats: true,
+      } as any
     );
   }
 

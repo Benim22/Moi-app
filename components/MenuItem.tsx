@@ -24,7 +24,7 @@ export default function MenuItem({ item, isFavorite = false, onFavoritePress }: 
   const router = useRouter();
 
   const handlePress = () => {
-    router.push(`/menu-item/${item.id}`);
+    router.push(`/menu-item/${item.id}` as any);
   };
 
   return (

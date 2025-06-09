@@ -11,7 +11,8 @@ import {
   Clock, 
   LogOut, 
   ChevronRight,
-  Shield
+  Shield,
+  Calendar
 } from 'lucide-react-native';
 
 export default function UserMenu() {
@@ -65,6 +66,11 @@ export default function UserMenu() {
       icon: <Clock size={24} color={theme.colors.text} />,
       onPress: () => router.push('/order-history'),
     },
+    {
+      title: 'Mina bokningar',
+      icon: <Calendar size={24} color={theme.colors.text} />,
+      onPress: () => router.push('/my-bookings'),
+    },
   ];
 
   // Add admin menu item if user is admin
@@ -73,7 +79,6 @@ export default function UserMenu() {
       title: 'Admin Panel',
       icon: <Shield size={24} color={theme.colors.gold} />,
       onPress: () => router.push('/admin'),
-      isAdmin: true,
     });
   }
 
@@ -111,7 +116,7 @@ export default function UserMenu() {
             style={[
               styles.menuItem, 
               index === menuItems.length - 1 && styles.menuItemLast,
-              item.isAdmin && styles.adminMenuItem
+              item.title === 'Admin Panel' && styles.adminMenuItem
             ]}
             onPress={item.onPress}
           >
@@ -119,12 +124,12 @@ export default function UserMenu() {
               {item.icon}
               <Text style={[
                 styles.menuItemText,
-                item.isAdmin && styles.adminMenuItemText
+                item.title === 'Admin Panel' && styles.adminMenuItemText
               ]}>
                 {item.title}
               </Text>
             </View>
-            <ChevronRight size={20} color={item.isAdmin ? theme.colors.gold : theme.colors.subtext} />
+            <ChevronRight size={20} color={item.title === 'Admin Panel' ? theme.colors.gold : theme.colors.subtext} />
           </TouchableOpacity>
         ))}
       </View>

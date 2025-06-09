@@ -64,7 +64,7 @@ export default function AdminSettingsScreen() {
     }
   };
   
-  const handleInputChange = (key, value) => {
+  const handleInputChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

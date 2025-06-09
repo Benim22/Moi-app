@@ -17,7 +17,11 @@ export enum NotificationType {
   PROFILE_UPDATE = 'profile_update', // Profiluppdateringar
   
   // Test-notifikation
-  TEST = 'test'
+  TEST = 'test',
+  
+  // Admin-notifikationer
+  ADMIN_NEW_ORDER = 'admin_new_order',
+  ADMIN_NEW_BOOKING = 'admin_new_booking'
 }
 
 // Datastruktur för varje notifikationstyp
@@ -78,6 +82,12 @@ export function getNotificationTitle(notification: NotificationData): string {
     case NotificationType.TEST:
       return 'Test av notifikation';
     
+    case NotificationType.ADMIN_NEW_ORDER:
+      return 'Ny beställning mottagen';
+    
+    case NotificationType.ADMIN_NEW_BOOKING:
+      return 'Ny bordbokning mottagen';
+    
     default:
       return 'Notifikation från Moi Sushi';
   }
@@ -118,6 +128,12 @@ export function getNotificationBody(notification: NotificationData): string {
     
     case NotificationType.TEST:
       return 'Detta är en testnotifikation från Moi Sushi appen.';
+    
+    case NotificationType.ADMIN_NEW_ORDER:
+      return `En ny beställning har lagts av ${notification.data?.customerName || 'en kund'}. Kontrollera admin-panelen för detaljer.`;
+    
+    case NotificationType.ADMIN_NEW_BOOKING:
+      return `En ny bordbokning har gjorts av ${notification.data?.customerName || 'en kund'} för ${notification.data?.date || ''} ${notification.data?.time || ''}.`;
     
     default:
       return 'Klicka för att se mer information.';

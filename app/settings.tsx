@@ -68,7 +68,7 @@ export default function SettingsScreen() {
     loadSettings();
   }, []);
   
-  const toggleDarkMode = async (value) => {
+  const toggleDarkMode = async (value: boolean) => {
     setDarkMode(value);
     try {
       await AsyncStorage.setItem('darkMode', JSON.stringify(value));
@@ -77,7 +77,7 @@ export default function SettingsScreen() {
     }
   };
   
-  const toggleNotifications = async (value) => {
+  const toggleNotifications = async (value: boolean) => {
     setNotifications(value);
     try {
       await AsyncStorage.setItem('notifications', JSON.stringify(value));
@@ -95,7 +95,7 @@ export default function SettingsScreen() {
     }
   };
   
-  const changeLanguage = async (langName) => {
+  const changeLanguage = async (langName: string) => {
     setLanguage(langName);
     try {
       await AsyncStorage.setItem('language', langName);
@@ -192,7 +192,7 @@ export default function SettingsScreen() {
     );
   };
   
-  const openWebPage = (url) => {
+  const openWebPage = (url: string) => {
     Linking.openURL(url).catch((err) => {
       console.error('Kunde inte öppna länken:', err);
       Alert.alert('Fel', 'Kunde inte öppna länken');
@@ -297,7 +297,7 @@ export default function SettingsScreen() {
           {isAdmin && profile?.role === 'admin' && (
             <TouchableOpacity 
               style={styles.preferenceItem}
-              onPress={() => router.push('/admin/index')}
+              onPress={() => router.push('/admin' as any)}
             >
               <View style={styles.preferenceLeft}>
                 <Shield size={24} color={theme.colors.gold} />

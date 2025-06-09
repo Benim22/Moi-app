@@ -261,7 +261,7 @@ export default function OrderScreen() {
       ubereats: "https://ubereats.com"
     },
     malmo: {
-      foodora: "https://www.foodora.se/restaurant/malmo/moi-sushi",
+      foodora: "https://www.foodora.se/restaurant/k5m5/moi-sushi-and-pokebowl-k5m5",
       wolt: "https://wolt.com/sv/swe/malmo",
       ubereats: "https://ubereats.com/se/malmo"
     }

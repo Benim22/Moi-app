@@ -66,10 +66,7 @@ export function useImagePreloader({
         resize: 'cover'
       });
 
-      return Image.prefetch(optimizedUrl, {
-        priority,
-        cachePolicy: 'disk'
-      });
+      return Image.prefetch(optimizedUrl, 'disk' as any);
     });
 
     // Kör alla preload-requests parallellt
@@ -107,10 +104,7 @@ export function preloadOptimizedImages(
   return Promise.allSettled(
     imageUrls.map(url => {
       const optimizedUrl = createOptimizedSupabaseUrl(url, defaultOptions);
-      return Image.prefetch(optimizedUrl, {
-        priority,
-        cachePolicy: 'disk'
-      });
+      return Image.prefetch(optimizedUrl, 'disk' as any);
     })
   );
 } 

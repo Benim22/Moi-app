@@ -97,12 +97,17 @@ const TimePickerView: React.FC<TimePickerProps> = ({ selectedTime, onSelectTime,
   );
 };
 
-const CalendarView = ({ selectedDate, onSelectDate, visible, onClose }) => {
+const CalendarView = ({ selectedDate, onSelectDate, visible, onClose }: {
+  selectedDate: Date | null;
+  onSelectDate: (date: Date) => void;
+  visible: boolean;
+  onClose: () => void;
+}) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const weeks = ['Sö', 'Må', 'Ti', 'On', 'To', 'Fr', 'Lö'];
   
-  const getDaysInMonth = (date) => {
+  const getDaysInMonth = (date: Date) => {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
     return eachDayOfInterval({ start, end });
@@ -193,7 +198,7 @@ const CalendarView = ({ selectedDate, onSelectDate, visible, onClose }) => {
 export default function BookingScreen() {
   const { profile } = useUserStore();
   const [date, setDate] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [time, setTime] = useState('');
   const [guests, setGuests] = useState('2 personer');
   const [name, setName] = useState(profile?.name || '');
@@ -244,7 +249,7 @@ export default function BookingScreen() {
     { id: '14', value: '21:00', label: '21:00' },
   ];
 
-  const handleDateSelect = (date) => {
+  const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setDate(format(date, 'yyyy-MM-dd'));
     setShowCalendar(false);

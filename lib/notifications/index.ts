@@ -23,6 +23,29 @@ export interface PushNotification {
 
 export { NotificationType, NotificationData, getNotificationTitle, getNotificationBody };
 
+// Add missing admin notification settings functions
+export async function getAdminNotificationSettings(): Promise<Record<string, boolean>> {
+  try {
+    const settings = await AsyncStorage.getItem('adminNotificationSettings');
+    return settings ? JSON.parse(settings) : {};
+  } catch (error) {
+    console.error('Error getting admin notification settings:', error);
+    return {};
+  }
+}
+
+export async function updateAdminNotificationSetting(key: string, value: boolean): Promise<boolean> {
+  try {
+    const settings = await getAdminNotificationSettings();
+    settings[key] = value;
+    await AsyncStorage.setItem('adminNotificationSettings', JSON.stringify(settings));
+    return true;
+  } catch (error) {
+    console.error('Error updating admin notification setting:', error);
+    return false;
+  }
+}
+
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   // Kontrollera om notiser är aktiverade av användaren i inställningarna
   const notificationsEnabled = await AsyncStorage.getItem('notifications');

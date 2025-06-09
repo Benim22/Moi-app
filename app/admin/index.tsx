@@ -1463,24 +1463,24 @@ export default function AdminScreen() {
   ]);
 
   // Bokningshantering
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
-  const [filteredBookings, setFilteredBookings] = useState([]);
+  const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
 
   // Användarhantering
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   // Orderhantering
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [orderFilterStatus, setOrderFilterStatus] = useState(null);
-  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [orderFilterStatus, setOrderFilterStatus] = useState<string | null>(null);
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   
   // Inställningar
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -1940,7 +1940,7 @@ export default function AdminScreen() {
       title: notificationTitle,
       body: notificationMessage,
       data: { 
-        type: notificationType === 'success' || notificationType === 'error' ? 'order' : notificationType,
+        type: (notificationType === 'success' || notificationType === 'error' ? 'order' : notificationType) as 'order' | 'promo' | 'reminder' | 'loyalty',
         targetAudience: 'all',
         priority: 'normal',
         sound: enableSound
@@ -2495,7 +2495,7 @@ export default function AdminScreen() {
                     
                     <View style={styles.orderItems}>
                       <Text style={styles.orderItemsTitle}>Beställda rätter:</Text>
-                      {order.items?.map((item, index) => (
+                                             {order.items?.map((item: any, index: number) => (
                         <View key={index} style={styles.orderItemRow}>
                           <Text style={styles.orderItemQuantity}>{item.quantity}x</Text>
                           <Text style={styles.orderItemText}>{item.name}</Text>
@@ -4209,13 +4209,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  dropdownItem: {
+  notificationDropdownItem2: {
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     minHeight: 55,
   },
-  dropdownItemText: {
+  notificationDropdownItemText2: {
     color: theme.colors.text,
     fontSize: 16,
   },
@@ -4467,16 +4467,16 @@ const styles = StyleSheet.create({
   },
 
   // Modal stilar för EditUserModal
-  formGroup: {
+  editUserFormGroup: {
     marginBottom: 15,
   },
-  formLabel: {
+  editUserFormLabel: {
     marginBottom: 5,
     fontWeight: '500',
     color: theme.colors.text,
     fontSize: 14,
   },
-  formInput: {
+  editUserFormInput: {
     backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -4747,7 +4747,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  notificationForm: {
+  notificationFormAdvanced: {
     flex: 1,
   },
   notificationFormSection: {
@@ -5269,7 +5269,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 8,
   },
-  disabledButton: {
+  disabledSettingsButton: {
     opacity: 0.5,
   },
 });
