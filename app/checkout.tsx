@@ -72,7 +72,7 @@ export default function CheckoutScreen() {
       if (success) {
         Alert.alert(
           'Beställning mottagen', 
-          'Tack för din beställning! Vi har skickat en bekräftelse till din e-post.',
+          'Tack för din beställning! Du kommer att få push-notiser om din beställnings status. Vi förbereder din mat och meddelar när den är klar för avhämtning.',
           [
             { 
               text: 'OK', 

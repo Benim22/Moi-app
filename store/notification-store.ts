@@ -1,18 +1,6 @@
 import { create } from 'zustand';
-import { NotificationType } from '@/components/InAppNotification';
 import { NotificationManager } from '@/utils/NotificationManager';
-
-interface InAppNotification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  visible: boolean;
-  action?: {
-    label: string;
-    onPress: () => void;
-  };
-}
+import { Platform } from 'react-native';
 
 interface NotificationSettings {
   ordersEnabled: boolean;
@@ -23,66 +11,28 @@ interface NotificationSettings {
 }
 
 interface NotificationStore {
-  // In-app notifikationer
-  notifications: InAppNotification[];
-  
   // Inställningar
   settings: NotificationSettings;
-  
-  // Actions för in-app notifikationer
-  showNotification: (notification: Omit<InAppNotification, 'id' | 'visible'>) => void;
-  dismissNotification: (id: string) => void;
-  clearAllNotifications: () => void;
   
   // Actions för inställningar
   updateSettings: (settings: Partial<NotificationSettings>) => void;
   initializeNotifications: () => Promise<void>;
+  savePushTokenForUser: (userId: string) => Promise<void>;
   
-  // Fördefinierade notifikationstyper
-  showSuccess: (title: string, message: string, action?: InAppNotification['action']) => void;
-  showError: (title: string, message: string, action?: InAppNotification['action']) => void;
-  showInfo: (title: string, message: string, action?: InAppNotification['action']) => void;
-  showPromo: (title: string, message: string, action?: InAppNotification['action']) => void;
-  
-  // Order-specifika notifikationer
-  showOrderConfirmation: (orderId: string, estimatedTime: number) => void;
-  showOrderReady: (orderId: string, isDelivery?: boolean) => void;
-  
-  // Loyalty notifikationer
-  showLoyaltyReward: (pointsEarned: number, totalPoints: number) => void;
+  // Push notification methods
+  sendOrderConfirmation: (orderId: string, estimatedTime: number) => void;
+  sendOrderReady: (orderId: string, isDelivery?: boolean) => void;
+  sendLoyaltyReward: (pointsEarned: number, totalPoints: number) => void;
+  sendPromoNotification: (title: string, message: string) => void;
 }
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
-  notifications: [],
   settings: {
     ordersEnabled: true,
     promosEnabled: true,
     remindersEnabled: false,
     loyaltyEnabled: true,
     pushTokenRegistered: false,
-  },
-
-  showNotification: (notification) => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const newNotification: InAppNotification = {
-      ...notification,
-      id,
-      visible: true,
-    };
-
-    set((state) => ({
-      notifications: [...state.notifications, newNotification],
-    }));
-  },
-
-  dismissNotification: (id) => {
-    set((state) => ({
-      notifications: state.notifications.filter(n => n.id !== id),
-    }));
-  },
-
-  clearAllNotifications: () => {
-    set({ notifications: [] });
   },
 
   updateSettings: (newSettings) => {
@@ -93,6 +43,12 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   initializeNotifications: async () => {
     try {
+      // Skippa på web
+      if (Platform.OS === 'web') {
+        console.log('ℹ️ Push-notifikationer stöds inte på webben');
+        return;
+      }
+
       // Begär behörigheter
       const permitted = await NotificationManager.requestPermissions();
       
@@ -101,12 +57,32 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         const token = await NotificationManager.getPushToken();
         
         if (token) {
+          // Spara push token till databasen för inloggad användare
+          try {
+            const { supabase } = await import('@/lib/supabase');
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+              const { error } = await supabase
+                .from('profiles')
+                .update({ push_token: token })
+                .eq('id', user.id);
+              
+              if (error) {
+                console.error('❌ Fel vid sparande av push token:', error);
+              } else {
+                console.log('✅ Push token sparad för användare:', user.email);
+              }
+            }
+          } catch (dbError) {
+            console.error('❌ Fel vid databasoperation för push token:', dbError);
+          }
+          
           set((state) => ({
             settings: { ...state.settings, pushTokenRegistered: true },
           }));
           
-          // Här skulle du skicka token till din backend
-          console.log('🔑 Push token att spara i backend:', token);
+          console.log('🔑 Push token registrerad:', token);
         }
 
         // Schemalägg återkommande påminnelser om användaren vill
@@ -120,93 +96,69 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     }
   },
 
-  // Fördefinierade notifikationstyper
-  showSuccess: (title, message, action) => {
-    get().showNotification({ type: 'success', title, message, action });
-  },
+  savePushTokenForUser: async (userId: string) => {
+    try {
+      // Skippa på web
+      if (Platform.OS === 'web') {
+        console.log('ℹ️ Push token sparas inte på webben');
+        return;
+      }
 
-  showError: (title, message, action) => {
-    get().showNotification({ type: 'error', title, message, action });
-  },
-
-  showInfo: (title, message, action) => {
-    get().showNotification({ type: 'info', title, message, action });
-  },
-
-  showPromo: (title, message, action) => {
-    const { settings } = get();
-    if (settings.promosEnabled) {
-      get().showNotification({ type: 'promo', title, message, action });
+      // Hämta push token
+      const token = await NotificationManager.getPushToken();
+      
+      if (token && userId) {
+        const { supabase } = await import('@/lib/supabase');
+        const { error } = await supabase
+          .from('profiles')
+          .update({ push_token: token })
+          .eq('id', userId);
+        
+        if (error) {
+          console.error('❌ Fel vid sparande av push token:', error);
+        } else {
+          console.log('✅ Push token sparad för användare:', userId);
+          set((state) => ({
+            settings: { ...state.settings, pushTokenRegistered: true },
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('❌ Fel vid sparande av push token:', error);
     }
   },
 
-  // Order-specifika notifikationer
-  showOrderConfirmation: (orderId, estimatedTime) => {
+  // Push notification methods
+  sendOrderConfirmation: (orderId, estimatedTime) => {
     const { settings } = get();
     
     if (settings.ordersEnabled) {
-      // In-app notifikation
-      get().showSuccess(
-        'Beställning bekräftad! 🍣',
-        `Beställning #${orderId} mottagen. Beräknad tid: ${estimatedTime} min`,
-        {
-          label: 'Visa beställning',
-          onPress: () => {
-            // Navigera till order screen
-            console.log('Navigera till order:', orderId);
-          },
-        }
-      );
-
-      // Push notifikation
       NotificationManager.sendOrderConfirmation(orderId, estimatedTime);
     }
   },
 
-  showOrderReady: (orderId, isDelivery = false) => {
+  sendOrderReady: (orderId, isDelivery = false) => {
     const { settings } = get();
     
     if (settings.ordersEnabled) {
-      const message = isDelivery 
-        ? 'Din beställning är klar och leveransen har påbörjats!'
-        : 'Din beställning är klar för avhämtning!';
-
-      // In-app notifikation
-      get().showSuccess(
-        'Maten är klar! 🎉',
-        message,
-        {
-          label: 'Visa detaljer',
-          onPress: () => {
-            console.log('Visa order detaljer:', orderId);
-          },
-        }
-      );
-
-      // Push notifikation
       NotificationManager.sendOrderReady(orderId, isDelivery);
     }
   },
 
-  showLoyaltyReward: (pointsEarned, totalPoints) => {
+  sendLoyaltyReward: (pointsEarned, totalPoints) => {
     const { settings } = get();
     
     if (settings.loyaltyEnabled) {
-      // In-app notifikation
-      get().showNotification({
-        type: 'promo',
-        title: 'Poäng intjänade! 🏆',
-        message: `Du fick ${pointsEarned} poäng! Totalt: ${totalPoints} poäng`,
-        action: {
-          label: 'Visa belöningar',
-          onPress: () => {
-            console.log('Navigera till loyalty screen');
-          },
-        },
-      });
-
-      // Push notifikation
       NotificationManager.sendLoyaltyReward(pointsEarned, totalPoints);
+    }
+  },
+
+  sendPromoNotification: (title, message) => {
+    const { settings } = get();
+    
+    if (settings.promosEnabled) {
+      // Skicka bara push notification
+      NotificationManager.sendPromoNotification(title, message);
     }
   },
 })); 

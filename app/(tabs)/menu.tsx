@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, Image, ActivityIndicator, Modal, TouchableOpacity, Dimensions, Platform, SafeAreaView as RNSafeAreaView, StatusBar, ToastAndroid, Alert, Pressable } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Image, ActivityIndicator, Modal, TouchableOpacity, Dimensions, Platform, SafeAreaView as RNSafeAreaView, StatusBar, Pressable } from 'react-native';
 import { globalStyles } from '@/constants/theme';
 import MenuCard from '@/components/MenuCard';
 import { theme } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryFilter from '@/components/CategoryFilter';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMenuStore, MenuItem } from '@/store/menu-store';
 import { X, Clock, Plus } from 'lucide-react-native';
 import { useCartStore } from '@/store/cart-store';
@@ -73,11 +73,11 @@ const MenuItemModal = ({ isVisible, onClose, item, formatCategoryName }: {
       addItem(menuItem);
       
       // Visa bekräftelse och stäng
-      Alert.alert('Tillagd', `${item.name} har lagts till i varukorgen`);
+              console.log(`${item.name} har lagts till i varukorgen`);
       onClose();
     } catch (error) {
       console.error('Fel:', error);
-      Alert.alert('Fel', 'Kunde inte lägga till i varukorgen');
+              console.error('Kunde inte lägga till i varukorgen');
     }
   };
 
@@ -340,6 +340,9 @@ export default function MenuScreen() {
     loadMenu();
   }, []);
 
+  // Hämta kategori-parameter från URL
+  const { category } = useLocalSearchParams<{ category?: string }>();
+
   // Formatera kategorinamn för visning
   const formatCategoryName = (category: string): string => {
     if (!category) return "Alla";
@@ -376,11 +379,23 @@ export default function MenuScreen() {
         name: formatCategoryName(category)
       }));
       setCategories(formattedCategories);
-      if (formattedCategories.length > 0 && !selectedCategory) {
+      
+      // Sätt vald kategori baserat på URL-parameter eller första kategorin
+      if (category && typeof category === 'string') {
+        // Hitta kategorin som matchar URL-parametern
+        const matchingCategory = formattedCategories.find(cat => 
+          cat.id.toLowerCase() === category.toLowerCase()
+        );
+        if (matchingCategory) {
+          setSelectedCategory(matchingCategory.id);
+        } else if (formattedCategories.length > 0) {
+          setSelectedCategory(formattedCategories[0].id);
+        }
+      } else if (formattedCategories.length > 0 && !selectedCategory) {
         setSelectedCategory(formattedCategories[0].id);
       }
     }
-  }, [menuCategories]);
+  }, [menuCategories, category]);
 
   // Filtrera när kategori ändras
   useEffect(() => {

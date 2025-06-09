@@ -126,64 +126,23 @@ export const useOrdersStore = create<OrdersState>()(
             orders: [newOrder, ...state.orders],
           }));
           
-          // Send email notifications
+          // Skicka push-notifikation till admins om ny beställning
           try {
-            // Prepare order items for email
-            const itemsList = cartItems.map(item => 
-              `${item.quantity}x ${item.menuItem.name} - ${item.menuItem.price * item.quantity} kr`
-            ).join('\n');
-            
-            console.log('Försöker skicka orderbekräftelse till:', email);
-            console.log('API URL:', API_URL);
-            
-            // Testa först om servern är tillgänglig
-            try {
-              const statusResponse = await fetch(`${API_URL}/status`, {
-                method: 'GET',
-                headers: {
-                  'Accept': 'application/json',
-                },
-              });
-              
-              if (statusResponse.ok) {
-                console.log('Server status check OK, proceeding with order confirmation email');
-              } else {
-                console.warn('Server status check failed:', await statusResponse.text());
-                // Vi fortsätter ändå med email-försöket
-              }
-            } catch (statusError) {
-              console.warn('Server status check error:', (statusError as Error).message);
-              // Vi fortsätter ändå med email-försöket
-            }
-            
-            const response = await fetch(`${API_URL}/email/order-confirmation`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                customerEmail: email,
-                customerName: name,
-                orderDetails: itemsList,
-                orderTotal: totalPrice,
-                deliveryAddress,
-                phone,
-              }),
+            const { PushNotificationService } = await import('@/utils/PushNotificationService');
+            await PushNotificationService.notifyAdminsNewOrder({
+              id: orderData.id,
+              name: name,
+              total_price: totalPrice,
+              items: cartItems.map(item => ({
+                name: item.menuItem.name,
+                quantity: item.quantity,
+                price: item.menuItem.price
+              }))
             });
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('E-postbekräftelse misslyckades, statuskod:', response.status, 'fel:', errorText);
-              throw new Error(`Failed to send email: ${response.status} ${errorText}`);
-            } else {
-              console.log('E-postbekräftelse skickad framgångsrikt');
-            }
-          } catch (emailError) {
-            console.error('Error sending order notification email:', emailError);
-            // Don't fail the order if email fails
+          } catch (notificationError) {
+            console.error('❌ Fel vid skicka admin-notifikation för beställning:', notificationError);
           }
-          
+
           // Clear the cart
           useCartStore.getState().clearCart();
           

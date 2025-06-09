@@ -139,6 +139,15 @@ export const useUserStore = create<UserState>()(
             });
             
             await get().refreshProfile();
+            
+            // Spara push token efter lyckad inloggning
+            try {
+              const { useNotificationStore } = await import('@/store/notification-store');
+              const { savePushTokenForUser } = useNotificationStore.getState();
+              await savePushTokenForUser(data.user.id);
+            } catch (tokenError) {
+              console.error('❌ Fel vid sparande av push token efter inloggning:', tokenError);
+            }
           }
           
           return { error };

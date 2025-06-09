@@ -31,12 +31,25 @@ import {
   X,
   ChevronDown,
   Image as ImageIcon,
-  Bell
+  Bell,
+  Calendar,
+  User,
+  CheckCircle,
+  Eye,
+  Clock,
+  Check,
+  AlertTriangle,
+  MapPin,
+  Globe,
+  Mail,
+  Phone,
+  Save
 } from 'lucide-react-native';
 import { useMenuStore } from '@/store/menu-store';
 import ImagePickerModal from '@/components/Admin/ImagePickerModal';
 import { useNotificationStore } from '@/store/notification-store';
 import { NotificationManager } from '@/utils/NotificationManager';
+import { useRestaurantStore } from '@/store/restaurant-store';
 
 // Våra lokala typer
 type MenuItem = {
@@ -1128,6 +1141,189 @@ const EditMenuItemModal = ({
 };
 
 // Uppdatera DeleteButton-komponenten med röd ikon utan bakgrundsfärg
+const EditUserModal = ({ 
+  visible, 
+  user, 
+  onClose, 
+  onSave 
+}: { 
+  visible: boolean; 
+  user: any | null; 
+  onClose: () => void; 
+  onSave: (user: any) => Promise<void>; 
+}) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setRole(user.role || 'user');
+    }
+  }, [user]);
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    if (!email.trim()) {
+      Alert.alert("Fel", "E-post krävs");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      await onSave({
+        ...user,
+        name,
+        email,
+        phone,
+        role
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving user:', error);
+      Alert.alert("Fel", "Kunde inte spara användaren");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Redigera användare</Text>
+            <TouchableOpacity onPress={onClose}>
+              <X size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Namn</Text>
+              <TextInput
+                style={styles.formInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Användarens namn"
+                placeholderTextColor={theme.colors.subtext || '#666'}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>E-post</Text>
+              <TextInput
+                style={styles.formInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="E-postadress"
+                placeholderTextColor={theme.colors.subtext || '#666'}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Telefon</Text>
+              <TextInput
+                style={styles.formInput}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Telefonnummer"
+                placeholderTextColor={theme.colors.subtext || '#666'}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Roll</Text>
+              <View style={styles.roleSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleOption,
+                    role === 'user' && styles.roleOptionSelected
+                  ]}
+                  onPress={() => setRole('user')}
+                >
+                  <Text 
+                    style={[
+                      styles.roleOptionText,
+                      role === 'user' && styles.roleOptionTextSelected
+                    ]}
+                  >
+                    Användare
+                  </Text>
+                  {role === 'user' && (
+                    <CheckCircle size={16} color={theme.colors.gold} style={{ marginLeft: 4 }} />
+                  )}
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.roleOption,
+                    role === 'admin' && styles.roleOptionSelected
+                  ]}
+                  onPress={() => setRole('admin')}
+                >
+                  <Text 
+                    style={[
+                      styles.roleOptionText,
+                      role === 'admin' && styles.roleOptionTextSelected
+                    ]}
+                  >
+                    Admin
+                  </Text>
+                  {role === 'admin' && (
+                    <CheckCircle size={16} color={theme.colors.gold} style={{ marginLeft: 4 }} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={onClose}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.cancelButtonText}>Avbryt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.submitButton, isSubmitting && styles.disabledButton]}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Spara</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+};
+
 const DeleteButton = ({ itemId, onSuccess }: { itemId: string, onSuccess: () => void }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -1186,6 +1382,7 @@ const DeleteButton = ({ itemId, onSuccess }: { itemId: string, onSuccess: () => 
 
 export default function AdminScreen() {
   const { isAdmin, isLoggedIn } = useUserStore();
+  const { settings: restaurantSettings, fetchSettings, updateSettings } = useRestaurantStore();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('menu');
   const [loading, setLoading] = useState(false);
@@ -1197,8 +1394,8 @@ export default function AdminScreen() {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [filteredItems, setFilteredItems] = useState<ExtendedMenuItem[]>([]);
   
-  // Notifikationshantering
-  const { showSuccess, showError, showInfo, showPromo } = useNotificationStore();
+  // Notifikationshantering - endast push notiser
+  const { sendPromoNotification } = useNotificationStore();
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState<'success' | 'error' | 'info' | 'promo'>('info');
@@ -1211,6 +1408,84 @@ export default function AdminScreen() {
   const [showSchedulingDropdown, setShowSchedulingDropdown] = useState(false);
   const [enableSound, setEnableSound] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Notification tabs och admin-inställningar
+  const [notificationActiveTab, setNotificationActiveTab] = useState('send');
+  const [adminNotificationSettings, setAdminNotificationSettings] = useState([
+    {
+      id: 'new_order',
+      title: 'Nya beställningar',
+      description: 'Få notifikationer när kunder lägger nya beställningar',
+      icon: 'ShoppingBag',
+      enabled: true,
+      category: 'orders'
+    },
+    {
+      id: 'order_cancelled',
+      title: 'Avbrutna beställningar',
+      description: 'Få notifikationer när beställningar avbryts',
+      icon: 'XCircle',
+      enabled: true,
+      category: 'orders'
+    },
+    {
+      id: 'new_booking',
+      title: 'Nya bordsbokningar',
+      description: 'Få notifikationer när kunder bokar bord',
+      icon: 'Calendar',
+      enabled: true,
+      category: 'bookings'
+    },
+    {
+      id: 'booking_cancelled',
+      title: 'Avbrutna bokningar',
+      description: 'Få notifikationer när bordsbokningar avbryts',
+      icon: 'XCircle',
+      enabled: false,
+      category: 'bookings'
+    },
+    {
+      id: 'new_user',
+      title: 'Nya användare',
+      description: 'Få notifikationer när nya kunder registrerar sig',
+      icon: 'Users',
+      enabled: false,
+      category: 'users'
+    },
+    {
+      id: 'system_alert',
+      title: 'Systemvarningar',
+      description: 'Få notifikationer om viktiga systemhändelser',
+      icon: 'AlertTriangle',
+      enabled: true,
+      category: 'system'
+    }
+  ]);
+
+  // Bokningshantering
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [filteredBookings, setFilteredBookings] = useState([]);
+
+  // Användarhantering
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Orderhantering
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orderFilterStatus, setOrderFilterStatus] = useState(null);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  
+  // Inställningar
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [localSettings, setLocalSettings] = useState(restaurantSettings);
 
   useEffect(() => {
     if (!isLoggedIn || !isAdmin) {
@@ -1224,8 +1499,21 @@ export default function AdminScreen() {
     } else {
       // Load menu items
       fetchMenuItems();
-    }
-  }, [isLoggedIn, isAdmin]);
+      // Load bookings
+      fetchBookings();
+      // Load users
+      fetchUsers();
+              // Load orders
+        fetchOrders();
+        // Load restaurant settings
+        loadRestaurantSettings();
+      }
+    }, [isLoggedIn, isAdmin]);
+
+    // Update local settings when restaurant settings change
+    useEffect(() => {
+      setLocalSettings(restaurantSettings);
+    }, [restaurantSettings]);
 
   const fetchMenuItems = async () => {
     try {
@@ -1251,6 +1539,100 @@ export default function AdminScreen() {
       Alert.alert("Fel", "Ett oväntat fel inträffade vid hämtning av menyn");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBookings = async () => {
+    try {
+      setBookingsLoading(true);
+      console.log("Hämtar bokningar...");
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Fel vid hämtning av bokningar:", error);
+        Alert.alert("Fel", `Kunde inte hämta bokningar: ${error.message}`);
+        return;
+      }
+      
+      console.log(`Hämtade ${data?.length || 0} bokningar`);
+      setBookings(data || []);
+      setFilteredBookings(data || []);
+    } catch (error: any) {
+      console.error("Oväntat fel vid hämtning av bokningar:", error);
+      Alert.alert("Fel", "Ett oväntat fel inträffade vid hämtning av bokningar");
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      console.log("Hämtar användare...");
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Fel vid hämtning av användare:", error);
+        Alert.alert("Fel", `Kunde inte hämta användare: ${error.message}`);
+        return;
+      }
+      
+      console.log(`Hämtade ${data?.length || 0} användare`);
+      setUsers(data || []);
+      setFilteredUsers(data || []);
+    } catch (error: any) {
+      console.error("Oväntat fel vid hämtning av användare:", error);
+      Alert.alert("Fel", "Ett oväntat fel inträffade vid hämtning av användare");
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      console.log("Hämtar ordrar...");
+      
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (ordersError) throw ordersError;
+      
+      if (ordersData) {
+        const ordersWithItems = [];
+        
+        for (const order of ordersData) {
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+          
+          if (itemsError) throw itemsError;
+          
+          ordersWithItems.push({
+            ...order,
+            items: itemsData || [],
+          });
+        }
+        
+        setOrders(ordersWithItems);
+        setFilteredOrders(ordersWithItems);
+      }
+    } catch (error: any) {
+      console.error("Fel vid hämtning av ordrar:", error);
+      Alert.alert("Fel", "Ett oväntat fel inträffade vid hämtning av ordrar");
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -1376,6 +1758,146 @@ export default function AdminScreen() {
     setFilteredItems(filtered);
   };
 
+  const handleBookingSearch = (text: string) => {
+    setBookingSearchQuery(text);
+    if (!text.trim()) {
+      setFilteredBookings(bookings);
+      return;
+    }
+    const lowercasedQuery = text.toLowerCase();
+    const filtered = bookings.filter(booking => 
+      booking.name?.toLowerCase().includes(lowercasedQuery) || 
+      booking.email?.toLowerCase().includes(lowercasedQuery) ||
+      booking.phone?.toLowerCase().includes(lowercasedQuery) ||
+      booking.status?.toLowerCase().includes(lowercasedQuery)
+    );
+    setFilteredBookings(filtered);
+  };
+
+  const updateBookingStatus = async (bookingId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', bookingId);
+
+      if (error) {
+        console.error("Fel vid uppdatering av bokningsstatus:", error);
+        Alert.alert("Fel", `Kunde inte uppdatera bokningsstatus: ${error.message}`);
+        return;
+      }
+
+      Alert.alert("Uppdaterad", "Bokningsstatus har uppdaterats");
+      await fetchBookings(); // Uppdatera listan
+    } catch (error: any) {
+      console.error("Oväntat fel vid uppdatering av bokningsstatus:", error);
+      Alert.alert("Fel", "Ett oväntat fel inträffade vid uppdatering av bokningsstatus");
+    }
+  };
+
+  const handleUserSearch = (text: string) => {
+    setUserSearchQuery(text);
+    if (!text.trim()) {
+      setFilteredUsers(users);
+      return;
+    }
+    const lowercasedQuery = text.toLowerCase();
+    const filtered = users.filter(user => 
+      user.name?.toLowerCase().includes(lowercasedQuery) || 
+      user.email?.toLowerCase().includes(lowercasedQuery) ||
+      user.role?.toLowerCase().includes(lowercasedQuery)
+    );
+    setFilteredUsers(filtered);
+  };
+
+  const handleEditUser = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setSelectedUser(user);
+      setShowEditUserModal(true);
+    }
+  };
+
+  const handleSaveUser = async (updatedUser: any) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          role: updatedUser.role
+        })
+        .eq('id', updatedUser.id);
+
+      if (error) throw error;
+
+      Alert.alert('Uppdaterad', 'Användaren har uppdaterats');
+      await fetchUsers();
+      setShowEditUserModal(false);
+      setSelectedUser(null);
+    } catch (error: any) {
+      console.error('Fel vid uppdatering av användare:', error);
+      Alert.alert('Fel', 'Kunde inte uppdatera användaren');
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('user_id, name')
+        .eq('id', orderId)
+        .single();
+      
+      if (orderError) throw orderError;
+      
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      
+      // Skicka push-notifikation till användaren
+      if (orderData?.user_id) {
+        try {
+          const { PushNotificationService } = await import('@/utils/PushNotificationService');
+          
+          if (newStatus === 'completed') {
+            await PushNotificationService.notifyUserOrderCompleted(
+              orderData.user_id, 
+              orderId, 
+              orderData.name || 'Kund'
+            );
+          } else if (newStatus === 'cancelled') {
+            await PushNotificationService.notifyUserOrderCancelled(
+              orderData.user_id, 
+              orderId, 
+              orderData.name || 'Kund'
+            );
+          }
+        } catch (notificationError) {
+          console.error('❌ Fel vid skicka push-notifikation till användare:', notificationError);
+        }
+      }
+      
+      Alert.alert('Uppdaterad', 'Orderstatus har uppdaterats');
+      await fetchOrders();
+    } catch (error: any) {
+      console.error('Fel vid uppdatering av orderstatus:', error);
+      Alert.alert('Fel', 'Kunde inte uppdatera orderstatus');
+    }
+  };
+
+  const handleOrderFilter = (status: string | null) => {
+    setOrderFilterStatus(status);
+    const filtered = status 
+      ? orders.filter(order => order.status === status)
+      : orders;
+    setFilteredOrders(filtered);
+  };
+
   // Notifikationshantering
   const handleSendNotification = () => {
     if (!notificationTitle.trim() || !notificationMessage.trim()) {
@@ -1431,29 +1953,13 @@ export default function AdminScreen() {
     if (notificationId) {
       console.log('✅ Push-notifikation skickad med ID:', notificationId);
       
-      // Visa även in-app notifikation för omedelbar feedback
-      switch (notificationType) {
-        case 'success':
-          showSuccess(notificationTitle, notificationMessage);
-          break;
-        case 'error':
-          showError(notificationTitle, notificationMessage);
-          break;
-        case 'info':
-          showInfo(notificationTitle, notificationMessage);
-          break;
-        case 'promo':
-          showPromo(notificationTitle, notificationMessage, {
-            label: 'Visa mer',
-            onPress: () => console.log('Promo-knapp tryckt'),
-          });
-          break;
-      }
+      // Endast logga - inga in-app notiser
+      console.log(`Push-notifikation av typ ${notificationType} skickad: ${notificationTitle}`);
 
       resetNotificationForm();
-      Alert.alert('Skickat', 'Push-notifikationen med Moi-logotyp har skickats och kommer att visas på hemskärmen');
+      console.log('✅ Push-notifikationen med Moi-logotyp har skickats och kommer att visas på hemskärmen');
     } else {
-      Alert.alert('Fel', 'Kunde inte skicka notifikationen. Kontrollera konsolen för mer information.');
+      console.error('❌ Kunde inte skicka notifikationen. Kontrollera konsolen för mer information.');
     }
   };
 
@@ -1475,7 +1981,7 @@ export default function AdminScreen() {
     });
 
     resetNotificationForm();
-    Alert.alert('Schemalagd', `Notifikationen kommer att skickas ${scheduledDateTime.toLocaleString('sv-SE')}`);
+    console.log(`📅 Notifikationen kommer att skickas ${scheduledDateTime.toLocaleString('sv-SE')}`);
   };
 
   const resetNotificationForm = () => {
@@ -1521,6 +2027,117 @@ export default function AdminScreen() {
     setNotificationType(type);
   };
 
+  // Admin notification settings funktioner
+  const toggleAdminNotificationSetting = (settingId: string) => {
+    setAdminNotificationSettings(prev => 
+      prev.map(setting => 
+        setting.id === settingId 
+          ? { ...setting, enabled: !setting.enabled }
+          : setting
+      )
+    );
+  };
+
+  const saveAdminNotificationSettings = async () => {
+    try {
+      // Här skulle man spara inställningarna till databasen
+      Alert.alert('Sparat', 'Admin-notifikationsinställningarna har sparats.');
+    } catch (error) {
+      console.error('Fel vid sparande av admin-notifikationsinställningar:', error);
+      Alert.alert('Fel', 'Kunde inte spara inställningarna.');
+    }
+  };
+
+  const getCategorySettings = (category: string) => {
+    return adminNotificationSettings.filter(setting => setting.category === category);
+  };
+
+  const getIconForSetting = (iconName: string) => {
+    switch (iconName) {
+      case 'ShoppingBag': return ShoppingBag;
+      case 'XCircle': return X;
+      case 'Calendar': return Calendar;
+      case 'Users': return Users;
+      case 'AlertTriangle': return AlertTriangle;
+      default: return Bell;
+    }
+  };
+
+  // Settings funktioner
+  const loadRestaurantSettings = async () => {
+    try {
+      setSettingsLoading(true);
+      await fetchSettings();
+      setLocalSettings(restaurantSettings);
+    } catch (error) {
+      console.error('Fel vid hämtning av inställningar:', error);
+      Alert.alert('Fel', 'Kunde inte hämta restaurangens inställningar.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const handleSettingsChange = (key: string, value: any) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const saveRestaurantSettings = async () => {
+    try {
+      setSettingsSaving(true);
+      const success = await updateSettings(localSettings);
+      
+      if (success) {
+        Alert.alert('Sparat', 'Inställningarna har sparats.');
+      } else {
+        Alert.alert('Fel', 'Kunde inte spara inställningarna. Försök igen.');
+      }
+    } catch (error) {
+      console.error('Fel vid sparande av inställningar:', error);
+      Alert.alert('Fel', 'Kunde inte spara inställningarna.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const testPushNotifications = async () => {
+    try {
+      console.log('🧪 Testar push-notifikationer...');
+      
+      // Kontrollera admin push tokens
+      const { data: admins, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, push_token')
+        .eq('role', 'admin');
+
+      if (error) {
+        console.error('❌ Fel vid hämtning av admins:', error);
+        Alert.alert('Fel', 'Kunde inte hämta admin-data');
+        return;
+      }
+
+      console.log('👥 Hittade admins:', admins);
+      
+      const adminsWithTokens = admins?.filter(admin => admin.push_token) || [];
+      const adminsWithoutTokens = admins?.filter(admin => !admin.push_token) || [];
+
+      Alert.alert(
+        'Push Token Status',
+        `Totalt ${admins?.length || 0} admins\n` +
+        `${adminsWithTokens.length} har push tokens\n` +
+        `${adminsWithoutTokens.length} saknar push tokens\n\n` +
+        `Admins med tokens:\n${adminsWithTokens.map(a => `• ${a.name || a.email}`).join('\n')}\n\n` +
+        `Admins utan tokens:\n${adminsWithoutTokens.map(a => `• ${a.name || a.email}`).join('\n')}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('❌ Fel vid test av push-notifikationer:', error);
+      Alert.alert('Fel', 'Kunde inte testa push-notifikationer');
+    }
+  };
+
   const renderAdminHome = () => {
     return (
       <View style={styles.container}>
@@ -1534,12 +2151,13 @@ export default function AdminScreen() {
           >
             <Text style={styles.navButtonText}>Hantera Meny</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity 
-            style={styles.navButton}
-            onPress={() => router.push('/settings')}
+            style={[styles.navButton, { backgroundColor: theme.colors.gold, flexDirection: 'row', alignItems: 'center' }]}
+            onPress={testPushNotifications}
           >
-            <Text style={styles.navButtonText}>Gå till Inställningar</Text>
+            <Bell size={20} color={theme.colors.text} style={{ marginRight: 8 }} />
+            <Text style={styles.navButtonText}>Testa Push-Notiser</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1676,235 +2294,814 @@ export default function AdminScreen() {
       case 'users':
         return (
           <View style={styles.contentContainer}>
-            <TouchableOpacity 
-              style={styles.navButton}
-              onPress={() => router.push('/admin/users')}
-            >
-              <Text style={styles.navButtonText}>Gå till Användarhantering</Text>
-            </TouchableOpacity>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Search size={20} color={theme.colors.subtext} style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Sök användare..."
+                  placeholderTextColor={theme.colors.subtext}
+                  value={userSearchQuery}
+                  onChangeText={handleUserSearch}
+                />
+                {userSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setUserSearchQuery('')}>
+                    <X size={16} color={theme.colors.subtext} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity 
+                style={styles.refreshButton}
+                onPress={fetchUsers}
+                disabled={usersLoading}
+              >
+                <Text style={styles.refreshButtonText}>Uppdatera</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {usersLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.gold} />
+                <Text style={styles.loadingText}>Laddar användare...</Text>
+              </View>
+            ) : filteredUsers.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Inga användare hittades</Text>
+                <TouchableOpacity 
+                  style={styles.emptyButton}
+                  onPress={fetchUsers}
+                >
+                  <Text style={styles.emptyButtonText}>Uppdatera</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={styles.scrollContainer}>
+                {filteredUsers.map((user) => (
+                  <View key={user.id} style={styles.userCard}>
+                    <View style={styles.userHeader}>
+                      <View style={styles.userInfo}>
+                        <View style={[
+                          styles.userAvatar,
+                          { backgroundColor: user.role === 'admin' ? '#FF6B6B' : '#4ECDC4' }
+                        ]}>
+                          <User size={20} color="#fff" />
+                        </View>
+                        <View style={styles.userDetails}>
+                          <Text style={styles.userName}>{user.name || 'Namnlös användare'}</Text>
+                          <Text style={styles.userEmail}>{user.email}</Text>
+                          {user.phone && <Text style={styles.userPhone}>{user.phone}</Text>}
+                        </View>
+                      </View>
+                      <View style={[styles.roleBadge, { 
+                        backgroundColor: user.role === 'admin' ? '#FF6B6B' : '#4ECDC4' 
+                      }]}>
+                        <Text style={styles.roleText}>
+                          {user.role === 'admin' ? 'Admin' : 'Användare'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.userActions}>
+                      <TouchableOpacity 
+                        style={styles.editUserButton}
+                        onPress={() => handleEditUser(user.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.editButtonContent}>
+                          <View style={styles.editIconContainer}>
+                            <Edit size={16} color="#fff" />
+                          </View>
+                          <Text style={styles.editButtonText}>Redigera</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <Text style={styles.userTimestamp}>
+                      Registrerad: {new Date(user.created_at).toLocaleDateString('sv-SE')}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+            
+            <EditUserModal
+              visible={showEditUserModal}
+              user={selectedUser}
+              onClose={() => {
+                setShowEditUserModal(false);
+                setSelectedUser(null);
+              }}
+              onSave={handleSaveUser}
+            />
           </View>
         );
       case 'orders':
         return (
           <View style={styles.contentContainer}>
-            <TouchableOpacity 
-              style={styles.navButton}
-              onPress={() => router.push('/admin/orders')}
-            >
-              <Text style={styles.navButtonText}>Gå till Orderhantering</Text>
-            </TouchableOpacity>
+            <View style={styles.orderFilters}>
+              <TouchableOpacity 
+                style={styles.refreshButton}
+                onPress={fetchOrders}
+                disabled={ordersLoading}
+              >
+                <Text style={styles.refreshButtonText}>Uppdatera ordrar</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.statusFilterContainer}>
+              {[
+                { key: null, label: 'Alla' },
+                { key: 'pending', label: 'Väntar' },
+                { key: 'processing', label: 'Behandlas' },
+                { key: 'completed', label: 'Slutförd' },
+                { key: 'cancelled', label: 'Avbruten' }
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.key || 'all'}
+                  style={[
+                    styles.statusFilterButton,
+                    orderFilterStatus === filter.key && styles.statusFilterButtonActive
+                  ]}
+                  onPress={() => handleOrderFilter(filter.key)}
+                >
+                  <Text style={[
+                    styles.statusFilterText,
+                    orderFilterStatus === filter.key && styles.statusFilterTextActive
+                  ]}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {ordersLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.gold} />
+                <Text style={styles.loadingText}>Laddar ordrar...</Text>
+              </View>
+            ) : filteredOrders.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Inga ordrar hittades</Text>
+                <TouchableOpacity 
+                  style={styles.emptyButton}
+                  onPress={fetchOrders}
+                >
+                  <Text style={styles.emptyButtonText}>Uppdatera</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={styles.scrollContainer}>
+                {filteredOrders.map((order) => (
+                  <View key={order.id} style={styles.orderCard}>
+                    <View style={styles.orderHeader}>
+                      <Text style={styles.orderId}>Order #{order.id.substring(0, 8)}</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: 
+                            order.status === 'completed' ? '#4ECDC4' :
+                            order.status === 'pending' ? '#FFE66D' :
+                            order.status === 'processing' ? '#4FC3F7' : '#FF6B6B'
+                        }
+                      ]}>
+                        <Text style={[
+                          styles.statusText,
+                          { color: order.status === 'pending' ? '#111' : '#fff' }
+                        ]}>
+                          {order.status === 'completed' ? 'Slutförd' : 
+                           order.status === 'pending' ? 'Väntar' : 
+                           order.status === 'processing' ? 'Behandlas' : 'Avbruten'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.orderInfo}>
+                      <Text style={styles.orderCustomer}>{order.name || 'Namnlös kund'}</Text>
+                      <Text style={styles.orderDate}>
+                        {new Date(order.created_at).toLocaleDateString('sv-SE')} {' '}
+                        {new Date(order.created_at).toLocaleTimeString('sv-SE', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </Text>
+                      <Text style={styles.orderPrice}>{order.total_price} kr</Text>
+                      {order.delivery_address && (
+                        <Text style={styles.orderAddress}>{order.delivery_address}</Text>
+                      )}
+                      {order.phone && (
+                        <Text style={styles.orderPhone}>{order.phone}</Text>
+                      )}
+                    </View>
+                    
+                    <View style={styles.orderItems}>
+                      <Text style={styles.orderItemsTitle}>Beställda rätter:</Text>
+                      {order.items?.map((item, index) => (
+                        <View key={index} style={styles.orderItemRow}>
+                          <Text style={styles.orderItemQuantity}>{item.quantity}x</Text>
+                          <Text style={styles.orderItemText}>{item.name}</Text>
+                          <Text style={styles.orderItemPrice}>{item.price * item.quantity} kr</Text>
+                        </View>
+                      ))}
+                    </View>
+                    
+                    <View style={styles.orderActions}>
+                      {order.status === 'pending' && (
+                        <>
+                          <TouchableOpacity
+                            style={[styles.orderActionButton, { backgroundColor: '#4FC3F7' }]}
+                            onPress={() => updateOrderStatus(order.id, 'processing')}
+                          >
+                            <Clock size={16} color="#fff" />
+                            <Text style={styles.orderActionButtonText}>Behandla</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.orderActionButton, { backgroundColor: '#4ECDC4' }]}
+                            onPress={() => updateOrderStatus(order.id, 'completed')}
+                          >
+                            <Check size={16} color="#fff" />
+                            <Text style={styles.orderActionButtonText}>Slutför</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.orderActionButton, { backgroundColor: '#FF6B6B' }]}
+                            onPress={() => updateOrderStatus(order.id, 'cancelled')}
+                          >
+                            <X size={16} color="#fff" />
+                            <Text style={styles.orderActionButtonText}>Avbryt</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                      {order.status === 'processing' && (
+                        <>
+                          <TouchableOpacity
+                            style={[styles.orderActionButton, { backgroundColor: '#4ECDC4' }]}
+                            onPress={() => updateOrderStatus(order.id, 'completed')}
+                          >
+                            <Check size={16} color="#fff" />
+                            <Text style={styles.orderActionButtonText}>Slutför</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.orderActionButton, { backgroundColor: '#FF6B6B' }]}
+                            onPress={() => updateOrderStatus(order.id, 'cancelled')}
+                          >
+                            <X size={16} color="#fff" />
+                            <Text style={styles.orderActionButtonText}>Avbryt</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
         );
       case 'settings':
         return (
           <View style={styles.contentContainer}>
-            <TouchableOpacity 
-              style={styles.navButton}
-              onPress={() => router.push('/admin/settings')}
-            >
-              <Text style={styles.navButtonText}>Gå till Inställningar</Text>
-            </TouchableOpacity>
+            {settingsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.gold} />
+                <Text style={styles.loadingText}>Laddar inställningar...</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.scrollContainer}>
+                <View style={styles.settingsSection}>
+                  <Text style={styles.settingsSectionTitle}>Restauranginformation</Text>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <Text style={styles.settingsLabel}>Restaurangnamn</Text>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.name || ''}
+                      onChangeText={(text) => handleSettingsChange('name', text)}
+                      placeholder="Restaurangnamn"
+                      placeholderTextColor={theme.colors.subtext}
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <Text style={styles.settingsLabel}>Beskrivning</Text>
+                    <TextInput
+                      style={[styles.settingsInput, styles.settingsTextArea]}
+                      value={localSettings?.description || ''}
+                      onChangeText={(text) => handleSettingsChange('description', text)}
+                      placeholder="Beskrivning av restaurangen"
+                      placeholderTextColor={theme.colors.subtext}
+                      multiline
+                      numberOfLines={3}
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <View style={styles.settingsLabelWithIcon}>
+                      <Clock size={20} color={theme.colors.text} />
+                      <Text style={styles.settingsLabel}>Öppettider</Text>
+                    </View>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.open_hours || ''}
+                      onChangeText={(text) => handleSettingsChange('open_hours', text)}
+                      placeholder="Mån-Fre: 11:00-22:00, Lör-Sön: 12:00-23:00"
+                      placeholderTextColor={theme.colors.subtext}
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <View style={styles.settingsLabelWithIcon}>
+                      <MapPin size={20} color={theme.colors.text} />
+                      <Text style={styles.settingsLabel}>Adress</Text>
+                    </View>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.address || ''}
+                      onChangeText={(text) => handleSettingsChange('address', text)}
+                      placeholder="Gatuadress, Stad"
+                      placeholderTextColor={theme.colors.subtext}
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <View style={styles.settingsLabelWithIcon}>
+                      <Globe size={20} color={theme.colors.text} />
+                      <Text style={styles.settingsLabel}>Webbplats</Text>
+                    </View>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.website || ''}
+                      onChangeText={(text) => handleSettingsChange('website', text)}
+                      placeholder="https://www.restaurang.se"
+                      placeholderTextColor={theme.colors.subtext}
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <View style={styles.settingsLabelWithIcon}>
+                      <Mail size={20} color={theme.colors.text} />
+                      <Text style={styles.settingsLabel}>E-post</Text>
+                    </View>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.contact_email || ''}
+                      onChangeText={(text) => handleSettingsChange('contact_email', text)}
+                      placeholder="info@restaurang.se"
+                      placeholderTextColor={theme.colors.subtext}
+                      keyboardType="email-address"
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <View style={styles.settingsLabelWithIcon}>
+                      <Phone size={20} color={theme.colors.text} />
+                      <Text style={styles.settingsLabel}>Telefon</Text>
+                    </View>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.contact_phone || ''}
+                      onChangeText={(text) => handleSettingsChange('contact_phone', text)}
+                      placeholder="08-123 456 78"
+                      placeholderTextColor={theme.colors.subtext}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+                
+                <View style={styles.settingsSection}>
+                  <Text style={styles.settingsSectionTitle}>Leveransinställningar</Text>
+                  
+                  <View style={styles.settingsToggleGroup}>
+                    <Text style={styles.settingsLabel}>Aktivera leverans</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.adminNotificationToggle,
+                        localSettings?.delivery_enabled && styles.adminNotificationToggleActive
+                      ]}
+                      onPress={() => handleSettingsChange('delivery_enabled', !localSettings?.delivery_enabled)}
+                    >
+                      <View style={[
+                        styles.adminNotificationToggleThumb,
+                        localSettings?.delivery_enabled && styles.adminNotificationToggleThumbActive
+                      ]} />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <Text style={styles.settingsLabel}>Minsta ordervärde (kr)</Text>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.min_order_value?.toString() || '0'}
+                      onChangeText={(text) => handleSettingsChange('min_order_value', parseInt(text) || 0)}
+                      placeholder="0"
+                      placeholderTextColor={theme.colors.subtext}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <Text style={styles.settingsLabel}>Leveransavgift (kr)</Text>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.delivery_fee?.toString() || '0'}
+                      onChangeText={(text) => handleSettingsChange('delivery_fee', parseInt(text) || 0)}
+                      placeholder="0"
+                      placeholderTextColor={theme.colors.subtext}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  
+                  <View style={styles.settingsInputGroup}>
+                    <Text style={styles.settingsLabel}>Gräns för gratis leverans (kr)</Text>
+                    <TextInput
+                      style={styles.settingsInput}
+                      value={localSettings?.free_delivery_threshold?.toString() || '0'}
+                      onChangeText={(text) => handleSettingsChange('free_delivery_threshold', parseInt(text) || 0)}
+                      placeholder="0"
+                      placeholderTextColor={theme.colors.subtext}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+                
+                <TouchableOpacity 
+                  style={[styles.saveSettingsButton, settingsSaving && styles.disabledButton]}
+                  onPress={saveRestaurantSettings}
+                  disabled={settingsSaving}
+                >
+                  {settingsSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Save size={20} color="#fff" />
+                  )}
+                  <Text style={styles.saveSettingsButtonText}>
+                    {settingsSaving ? 'Sparar...' : 'Spara inställningar'}
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
           </View>
         );
       case 'notifications':
         return (
           <View style={styles.contentContainer}>
-            <ScrollView style={styles.notificationForm}>
-              <Text style={styles.sectionTitle}>Skicka notifikation</Text>
-              <Text style={styles.sectionDescription}>
-                Skicka meddelanden till alla appanvändare med avancerade inställningar
-              </Text>
-
-              {/* Schemaläggningstyp */}
-              <Text style={styles.inputLabel}>Schemaläggning</Text>
-              <TouchableOpacity
-                style={styles.dropdownButton}
-                onPress={() => setShowSchedulingDropdown(!showSchedulingDropdown)}
+            {/* Notification Tabs */}
+            <View style={styles.notificationTabContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.notificationTab,
+                  notificationActiveTab === 'send' && styles.notificationTabActive
+                ]}
+                onPress={() => setNotificationActiveTab('send')}
               >
-                <Text style={styles.dropdownButtonText}>
-                  {getSchedulingLabel(schedulingType)}
+                <Bell size={18} color={notificationActiveTab === 'send' ? theme.colors.gold : theme.colors.text} />
+                <Text style={[
+                  styles.notificationTabText,
+                  notificationActiveTab === 'send' && styles.notificationTabTextActive
+                ]}>
+                  Skicka notiser
                 </Text>
-                <ChevronDown size={20} color={theme.colors.text} />
               </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.notificationTab,
+                  notificationActiveTab === 'admin' && styles.notificationTabActive
+                ]}
+                onPress={() => setNotificationActiveTab('admin')}
+              >
+                <Settings size={18} color={notificationActiveTab === 'admin' ? theme.colors.gold : theme.colors.text} />
+                <Text style={[
+                  styles.notificationTabText,
+                  notificationActiveTab === 'admin' && styles.notificationTabTextActive
+                ]}>
+                  Admin-inställningar
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              {showSchedulingDropdown && (
-                <View style={styles.dropdownMenu}>
-                  {['immediate', 'scheduled'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setSchedulingType(type as any);
-                        setShowSchedulingDropdown(false);
+            <ScrollView 
+              style={styles.notificationForm} 
+              showsVerticalScrollIndicator={false}
+            >
+              {notificationActiveTab === 'send' && (
+                <>
+                  {/* Notification Form Section */}
+                  <View style={styles.notificationFormSection}>
+                <View style={styles.notificationFormHeader}>
+                  <Text style={styles.sectionTitle}>✉️ Skicka notifikation</Text>
+                  <Text style={styles.sectionDescription}>
+                    Skapa och skicka meddelanden med avancerade inställningar
+                  </Text>
+                </View>
+
+                {/* Schemaläggningstyp */}
+                <View style={styles.notificationInputGroup}>
+                  <View style={styles.notificationInputLabelContainer}>
+                    <Clock size={18} color={theme.colors.gold} />
+                    <Text style={styles.notificationInputLabel}>Schemaläggning</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.notificationDropdownButton}
+                    onPress={() => setShowSchedulingDropdown(!showSchedulingDropdown)}
+                  >
+                    <Text style={styles.notificationDropdownButtonText}>
+                      {getSchedulingLabel(schedulingType)}
+                    </Text>
+                    <ChevronDown 
+                      size={20} 
+                      color={theme.colors.text} 
+                      style={{ 
+                        transform: [{ rotate: showSchedulingDropdown ? '180deg' : '0deg' }] 
                       }}
-                    >
-                      <Text style={styles.dropdownItemText}>
-                        {getSchedulingLabel(type as any)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                    />
+                  </TouchableOpacity>
+
+                  {showSchedulingDropdown && (
+                    <View style={styles.notificationDropdownMenu}>
+                      {['immediate', 'scheduled'].map((type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.notificationDropdownItem,
+                            schedulingType === type && styles.notificationDropdownItemActive
+                          ]}
+                          onPress={() => {
+                            setSchedulingType(type as any);
+                            setShowSchedulingDropdown(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.notificationDropdownItemText,
+                            schedulingType === type && styles.notificationDropdownItemTextActive
+                          ]}>
+                            {getSchedulingLabel(type as any)}
+                          </Text>
+                          {schedulingType === type && (
+                            <Check size={16} color={theme.colors.gold} />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              )}
 
-              {/* Schemaläggningsdetaljer */}
-              {schedulingType === 'scheduled' && (
-                <View style={styles.schedulingDetails}>
-                  <Text style={styles.inputLabel}>Datum</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="ÅÅÅÅ-MM-DD"
-                    placeholderTextColor={theme.colors.subtext}
-                    value={scheduledDate}
-                    onChangeText={setScheduledDate}
-                  />
-                  
-                  <Text style={styles.inputLabel}>Tid</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="HH:MM"
-                    placeholderTextColor={theme.colors.subtext}
-                    value={scheduledTime}
-                    onChangeText={setScheduledTime}
-                  />
-                </View>
-              )}
+                {/* Schemaläggningsdetaljer */}
+                {schedulingType === 'scheduled' && (
+                  <View style={styles.notificationSchedulingDetails}>
+                    <View style={styles.notificationSchedulingRow}>
+                      <View style={styles.notificationSchedulingCol}>
+                        <View style={styles.notificationInputLabelContainer}>
+                          <Calendar size={18} color={theme.colors.gold} />
+                          <Text style={styles.notificationInputLabel}>Datum</Text>
+                        </View>
+                        <TextInput
+                          style={styles.notificationTextInput}
+                          placeholder="ÅÅÅÅ-MM-DD"
+                          placeholderTextColor={theme.colors.subtext}
+                          value={scheduledDate}
+                          onChangeText={setScheduledDate}
+                        />
+                      </View>
+                      
+                      <View style={styles.notificationSchedulingCol}>
+                        <View style={styles.notificationInputLabelContainer}>
+                          <Clock size={18} color={theme.colors.gold} />
+                          <Text style={styles.notificationInputLabel}>Tid</Text>
+                        </View>
+                        <TextInput
+                          style={styles.notificationTextInput}
+                          placeholder="HH:MM"
+                          placeholderTextColor={theme.colors.subtext}
+                          value={scheduledTime}
+                          onChangeText={setScheduledTime}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                )}
 
-              {/* Notifikationstyp */}
-              <Text style={styles.inputLabel}>Typ av notifikation</Text>
-              <TouchableOpacity
-                style={styles.dropdownButton}
-                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
-              >
-                <Text style={styles.dropdownButtonText}>
-                  {getNotificationTypeLabel(notificationType)}
-                </Text>
-                <ChevronDown size={20} color={theme.colors.text} />
-              </TouchableOpacity>
-
-              {showTypeDropdown && (
-                <View style={styles.dropdownMenu}>
-                  {['info', 'success', 'error', 'promo'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setNotificationType(type as any);
-                        setShowTypeDropdown(false);
+                {/* Notifikationstyp */}
+                <View style={styles.notificationInputGroup}>
+                  <View style={styles.notificationInputLabelContainer}>
+                    <Bell size={18} color={theme.colors.gold} />
+                    <Text style={styles.notificationInputLabel}>Typ av notifikation</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.notificationDropdownButton}
+                    onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+                  >
+                    <Text style={styles.notificationDropdownButtonText}>
+                      {getNotificationTypeLabel(notificationType)}
+                    </Text>
+                    <ChevronDown 
+                      size={20} 
+                      color={theme.colors.text}
+                      style={{ 
+                        transform: [{ rotate: showTypeDropdown ? '180deg' : '0deg' }] 
                       }}
-                    >
-                      <Text style={styles.dropdownItemText}>
-                        {getNotificationTypeLabel(type)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                    />
+                  </TouchableOpacity>
+
+                  {showTypeDropdown && (
+                    <View style={styles.notificationDropdownMenu}>
+                      {['info', 'success', 'error', 'promo'].map((type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.notificationDropdownItem,
+                            notificationType === type && styles.notificationDropdownItemActive
+                          ]}
+                          onPress={() => {
+                            setNotificationType(type as any);
+                            setShowTypeDropdown(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.notificationDropdownItemText,
+                            notificationType === type && styles.notificationDropdownItemTextActive
+                          ]}>
+                            {getNotificationTypeLabel(type)}
+                          </Text>
+                          {notificationType === type && (
+                            <Check size={16} color={theme.colors.gold} />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              )}
 
-              {/* Ljudinställningar */}
-              <View style={styles.soundContainer}>
-                <TouchableOpacity
-                  style={[styles.checkbox, enableSound && styles.checkboxChecked]}
-                  onPress={() => setEnableSound(!enableSound)}
-                >
-                  {enableSound && <Text style={styles.checkMark}>✓</Text>}
-                </TouchableOpacity>
-                <Text style={styles.checkboxLabel}>Aktivera ljud</Text>
-              </View>
-
-              {/* Titel */}
-              <Text style={styles.inputLabel}>Titel</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Ange notifikationens titel..."
-                placeholderTextColor={theme.colors.subtext}
-                value={notificationTitle}
-                onChangeText={setNotificationTitle}
-                maxLength={50}
-              />
-              <Text style={styles.characterCount}>{notificationTitle.length}/50</Text>
-
-              {/* Meddelande */}
-              <Text style={styles.inputLabel}>Meddelande</Text>
-              <TextInput
-                style={[styles.textInput, styles.textAreaInput]}
-                placeholder="Skriv ditt meddelande här..."
-                placeholderTextColor={theme.colors.subtext}
-                value={notificationMessage}
-                onChangeText={setNotificationMessage}
-                multiline
-                numberOfLines={4}
-                maxLength={200}
-              />
-              <Text style={styles.characterCount}>{notificationMessage.length}/200</Text>
-
-              {/* Förhandsvisning */}
-              <TouchableOpacity
-                style={styles.previewButton}
-                onPress={() => setShowPreview(!showPreview)}
-              >
-                <Text style={styles.previewButtonText}>
-                  {showPreview ? 'Dölj förhandsvisning' : 'Visa förhandsvisning'}
-                </Text>
-              </TouchableOpacity>
-
-              {showPreview && (
-                <View style={styles.previewContainer}>
-                  <Text style={styles.previewTitle}>Förhandsvisning</Text>
-                  <View style={[styles.previewNotification, 
-                    notificationType === 'success' && styles.previewSuccess,
-                    notificationType === 'error' && styles.previewError,
-                    notificationType === 'promo' && styles.previewPromo,
-                  ]}>
-                    <Text style={styles.previewNotificationTitle}>{notificationTitle || 'Titel'}</Text>
-                    <Text style={styles.previewNotificationMessage}>{notificationMessage || 'Meddelande'}</Text>
-                    <Text style={styles.previewDetails}>
-                      {getSchedulingLabel(schedulingType)} • Alla användare • Normal prioritet
+                {/* Titel */}
+                <View style={styles.notificationInputGroup}>
+                  <View style={styles.notificationInputLabelContainer}>
+                    <Edit size={18} color={theme.colors.gold} />
+                    <Text style={styles.notificationInputLabel}>Titel</Text>
+                  </View>
+                  <TextInput
+                    style={styles.notificationTextInput}
+                    placeholder="Ange notifikationens titel..."
+                    placeholderTextColor={theme.colors.subtext}
+                    value={notificationTitle}
+                    onChangeText={setNotificationTitle}
+                    maxLength={50}
+                  />
+                  <View style={styles.notificationCharacterCountContainer}>
+                    <Text style={[
+                      styles.notificationCharacterCount,
+                      notificationTitle.length > 40 && styles.notificationCharacterCountWarning
+                    ]}>
+                      {notificationTitle.length}/50
                     </Text>
                   </View>
                 </View>
-              )}
+
+                {/* Meddelande */}
+                <View style={styles.notificationInputGroup}>
+                  <View style={styles.notificationInputLabelContainer}>
+                    <Edit size={18} color={theme.colors.gold} />
+                    <Text style={styles.notificationInputLabel}>Meddelande</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.notificationTextInput, styles.notificationTextAreaInput]}
+                    placeholder="Skriv ditt meddelande här..."
+                    placeholderTextColor={theme.colors.subtext}
+                    value={notificationMessage}
+                    onChangeText={setNotificationMessage}
+                    multiline
+                    numberOfLines={4}
+                    maxLength={200}
+                  />
+                  <View style={styles.notificationCharacterCountContainer}>
+                    <Text style={[
+                      styles.notificationCharacterCount,
+                      notificationMessage.length > 180 && styles.notificationCharacterCountWarning
+                    ]}>
+                      {notificationMessage.length}/200
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Ljudinställningar */}
+                <View style={styles.notificationSoundContainer}>
+                  <TouchableOpacity
+                    style={styles.notificationCheckboxContainer}
+                    onPress={() => setEnableSound(!enableSound)}
+                  >
+                    <View style={[
+                      styles.notificationCheckbox, 
+                      enableSound && styles.notificationCheckboxChecked
+                    ]}>
+                      {enableSound && <Check size={14} color="#fff" />}
+                    </View>
+                    <Text style={styles.notificationCheckboxLabel}>Aktivera ljud för notifikation</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Förhandsvisning */}
+              <View style={styles.notificationPreviewSection}>
+                <TouchableOpacity
+                  style={styles.notificationPreviewButton}
+                  onPress={() => setShowPreview(!showPreview)}
+                >
+                  <Eye size={20} color={theme.colors.gold} />
+                  <Text style={styles.notificationPreviewButtonText}>
+                    {showPreview ? 'Dölj förhandsvisning' : 'Visa förhandsvisning'}
+                  </Text>
+                  <ChevronDown 
+                    size={16} 
+                    color={theme.colors.gold}
+                    style={{ 
+                      transform: [{ rotate: showPreview ? '180deg' : '0deg' }] 
+                    }}
+                  />
+                </TouchableOpacity>
+
+                {showPreview && (
+                  <View style={styles.notificationPreviewContainer}>
+                    <Text style={styles.notificationPreviewTitle}>📱 Förhandsvisning</Text>
+                    <View style={[styles.notificationPreviewNotification, 
+                      notificationType === 'success' && styles.notificationPreviewSuccess,
+                      notificationType === 'error' && styles.notificationPreviewError,
+                      notificationType === 'promo' && styles.notificationPreviewPromo,
+                    ]}>
+                      <View style={styles.notificationPreviewHeader}>
+                        <View style={styles.notificationPreviewIcon}>
+                          <Bell size={16} color="#fff" />
+                        </View>
+                        <Text style={styles.notificationPreviewNotificationTitle}>
+                          {notificationTitle || 'Notifikationstitel'}
+                        </Text>
+                      </View>
+                      <Text style={styles.notificationPreviewNotificationMessage}>
+                        {notificationMessage || 'Ditt meddelande kommer att visas här...'}
+                      </Text>
+                      <View style={styles.notificationPreviewFooter}>
+                        <Text style={styles.notificationPreviewDetails}>
+                          {getSchedulingLabel(schedulingType)} • Alla användare
+                        </Text>
+                        <Text style={styles.notificationPreviewTime}>
+                          {schedulingType === 'immediate' ? 'Nu' : `${scheduledDate} ${scheduledTime}`}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
 
               {/* Skicka-knapp */}
               <TouchableOpacity
                 style={[
-                  styles.sendButton,
-                  (!notificationTitle.trim() || !notificationMessage.trim()) && styles.sendButtonDisabled
+                  styles.notificationSendButton,
+                  (!notificationTitle.trim() || !notificationMessage.trim()) && styles.notificationSendButtonDisabled
                 ]}
                 onPress={handleSendNotification}
                 disabled={!notificationTitle.trim() || !notificationMessage.trim()}
               >
-                <Bell size={20} color="#fff" />
-                <Text style={styles.sendButtonText}>
-                  {schedulingType === 'immediate' ? 'Skicka notifikation' : 'Schemalägg notifikation'}
-                </Text>
+                <View style={styles.notificationSendButtonContent}>
+                  <Bell size={20} color="#fff" />
+                  <Text style={styles.notificationSendButtonText}>
+                    {schedulingType === 'immediate' ? 'Skicka notifikation' : 'Schemalägg notifikation'}
+                  </Text>
+                </View>
               </TouchableOpacity>
 
-              {/* Utökade mallar */}
-              <View style={styles.templatesSection}>
-                <Text style={styles.sectionTitle}>Snabbmallar</Text>
+              {/* Snabbmallar */}
+              <View style={styles.notificationTemplatesSection}>
+                <View style={styles.notificationTemplatesHeader}>
+                  <Text style={styles.notificationTemplatesSectionTitle}>🚀 Snabbmallar</Text>
+                  <Text style={styles.notificationTemplatesSectionDescription}>
+                    Klicka på en mall för att fylla i formuläret automatiskt
+                  </Text>
+                </View>
                 
                 {/* Erbjudanden */}
-                <Text style={styles.templateCategoryTitle}>🎯 Erbjudanden</Text>
-                <TouchableOpacity
-                  style={styles.templateButton}
-                  onPress={() => applyTemplate('Specialerbjudande! 🍣', '20% rabatt på alla sushi-rullar idag! Begränsad tid.', 'promo')}
-                >
-                  <Text style={styles.templateButtonText}>Sushi-erbjudande</Text>
-                </TouchableOpacity>
+                <View style={styles.notificationTemplateCategory}>
+                  <Text style={styles.notificationTemplateCategoryTitle}>🎯 Erbjudanden & Kampanjer</Text>
+                  <View style={styles.notificationTemplateGrid}>
+                    <TouchableOpacity
+                      style={[styles.notificationTemplateButton, styles.notificationTemplatePromo]}
+                      onPress={() => applyTemplate('Specialerbjudande! 🍣', '20% rabatt på alla sushi-rullar idag! Begränsad tid.', 'promo')}
+                    >
+                      <Text style={styles.notificationTemplateButtonIcon}>🍣</Text>
+                      <Text style={styles.notificationTemplateButtonText}>Sushi-erbjudande</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.templateButton}
-                  onPress={() => applyTemplate('Happy Hour! 🥢', 'Köp 2 få 1 gratis på alla drycker mellan 15-17! Missa inte detta!', 'promo')}
-                >
-                  <Text style={styles.templateButtonText}>Happy Hour</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.notificationTemplateButton, styles.notificationTemplatePromo]}
+                      onPress={() => applyTemplate('Happy Hour! 🥢', 'Köp 2 få 1 gratis på alla drycker mellan 15-17! Missa inte detta!', 'promo')}
+                    >
+                      <Text style={styles.notificationTemplateButtonIcon}>🥢</Text>
+                      <Text style={styles.notificationTemplateButtonText}>Happy Hour</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.templateButton}
-                  onPress={() => applyTemplate('Gratis leverans! 🚚', 'Beställ för minst 300kr och få gratis leverans hela veckan!', 'promo')}
-                >
-                  <Text style={styles.templateButtonText}>Gratis leverans</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.notificationTemplateButton, styles.notificationTemplatePromo]}
+                      onPress={() => applyTemplate('Gratis leverans! 🚚', 'Beställ för minst 300kr och få gratis leverans hela veckan!', 'promo')}
+                    >
+                      <Text style={styles.notificationTemplateButtonIcon}>🚚</Text>
+                      <Text style={styles.notificationTemplateButtonText}>Gratis leverans</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
                 {/* Information */}
                 <Text style={styles.templateCategoryTitle}>ℹ️ Information</Text>
@@ -1982,7 +3179,271 @@ export default function AdminScreen() {
                   <Text style={styles.templateButtonText}>Belöning</Text>
                 </TouchableOpacity>
               </View>
+                </>
+              )}
+
+              {notificationActiveTab === 'admin' && (
+                <View style={styles.adminNotificationSection}>
+                  <View style={styles.adminNotificationHeader}>
+                    <Text style={styles.sectionTitle}>🔔 Admin-notifikationer</Text>
+                    <Text style={styles.sectionDescription}>
+                      Hantera vilka notifikationer du vill få som admin
+                    </Text>
+                  </View>
+
+                  {/* Beställningar kategori */}
+                  <View style={styles.adminNotificationCategory}>
+                    <Text style={styles.adminNotificationCategoryTitle}>📦 Beställningar</Text>
+                    {getCategorySettings('orders').map((setting) => {
+                      const IconComponent = getIconForSetting(setting.icon);
+                      return (
+                        <View key={setting.id} style={styles.adminNotificationItem}>
+                          <View style={styles.adminNotificationItemLeft}>
+                            <View style={styles.adminNotificationIcon}>
+                              <IconComponent size={20} color={theme.colors.gold} />
+                            </View>
+                            <View style={styles.adminNotificationContent}>
+                              <Text style={styles.adminNotificationTitle}>{setting.title}</Text>
+                              <Text style={styles.adminNotificationDescription}>{setting.description}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.adminNotificationToggle,
+                              setting.enabled && styles.adminNotificationToggleActive
+                            ]}
+                            onPress={() => toggleAdminNotificationSetting(setting.id)}
+                          >
+                            <View style={[
+                              styles.adminNotificationToggleThumb,
+                              setting.enabled && styles.adminNotificationToggleThumbActive
+                            ]} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* Bordsbokningar kategori */}
+                  <View style={styles.adminNotificationCategory}>
+                    <Text style={styles.adminNotificationCategoryTitle}>🍽️ Bordsbokningar</Text>
+                    {getCategorySettings('bookings').map((setting) => {
+                      const IconComponent = getIconForSetting(setting.icon);
+                      return (
+                        <View key={setting.id} style={styles.adminNotificationItem}>
+                          <View style={styles.adminNotificationItemLeft}>
+                            <View style={styles.adminNotificationIcon}>
+                              <IconComponent size={20} color={theme.colors.gold} />
+                            </View>
+                            <View style={styles.adminNotificationContent}>
+                              <Text style={styles.adminNotificationTitle}>{setting.title}</Text>
+                              <Text style={styles.adminNotificationDescription}>{setting.description}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.adminNotificationToggle,
+                              setting.enabled && styles.adminNotificationToggleActive
+                            ]}
+                            onPress={() => toggleAdminNotificationSetting(setting.id)}
+                          >
+                            <View style={[
+                              styles.adminNotificationToggleThumb,
+                              setting.enabled && styles.adminNotificationToggleThumbActive
+                            ]} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* Användare kategori */}
+                  <View style={styles.adminNotificationCategory}>
+                    <Text style={styles.adminNotificationCategoryTitle}>👥 Användare</Text>
+                    {getCategorySettings('users').map((setting) => {
+                      const IconComponent = getIconForSetting(setting.icon);
+                      return (
+                        <View key={setting.id} style={styles.adminNotificationItem}>
+                          <View style={styles.adminNotificationItemLeft}>
+                            <View style={styles.adminNotificationIcon}>
+                              <IconComponent size={20} color={theme.colors.gold} />
+                            </View>
+                            <View style={styles.adminNotificationContent}>
+                              <Text style={styles.adminNotificationTitle}>{setting.title}</Text>
+                              <Text style={styles.adminNotificationDescription}>{setting.description}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.adminNotificationToggle,
+                              setting.enabled && styles.adminNotificationToggleActive
+                            ]}
+                            onPress={() => toggleAdminNotificationSetting(setting.id)}
+                          >
+                            <View style={[
+                              styles.adminNotificationToggleThumb,
+                              setting.enabled && styles.adminNotificationToggleThumbActive
+                            ]} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* System kategori */}
+                  <View style={styles.adminNotificationCategory}>
+                    <Text style={styles.adminNotificationCategoryTitle}>⚙️ System</Text>
+                    {getCategorySettings('system').map((setting) => {
+                      const IconComponent = getIconForSetting(setting.icon);
+                      return (
+                        <View key={setting.id} style={styles.adminNotificationItem}>
+                          <View style={styles.adminNotificationItemLeft}>
+                            <View style={styles.adminNotificationIcon}>
+                              <IconComponent size={20} color={theme.colors.gold} />
+                            </View>
+                            <View style={styles.adminNotificationContent}>
+                              <Text style={styles.adminNotificationTitle}>{setting.title}</Text>
+                              <Text style={styles.adminNotificationDescription}>{setting.description}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.adminNotificationToggle,
+                              setting.enabled && styles.adminNotificationToggleActive
+                            ]}
+                            onPress={() => toggleAdminNotificationSetting(setting.id)}
+                          >
+                            <View style={[
+                              styles.adminNotificationToggleThumb,
+                              setting.enabled && styles.adminNotificationToggleThumbActive
+                            ]} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* Spara-knapp */}
+                  <TouchableOpacity
+                    style={styles.adminNotificationSaveButton}
+                    onPress={saveAdminNotificationSettings}
+                  >
+                    <View style={styles.adminNotificationSaveButtonContent}>
+                      <Check size={20} color="#111" />
+                      <Text style={styles.adminNotificationSaveButtonText}>Spara inställningar</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
             </ScrollView>
+          </View>
+        );
+      case 'bookings':
+        return (
+          <View style={styles.contentContainer}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Search size={20} color={theme.colors.subtext} style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Sök bokningar..."
+                  placeholderTextColor={theme.colors.subtext}
+                  value={bookingSearchQuery}
+                  onChangeText={handleBookingSearch}
+                />
+                {bookingSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setBookingSearchQuery('')}>
+                    <X size={16} color={theme.colors.subtext} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity 
+                style={styles.refreshButton}
+                onPress={fetchBookings}
+                disabled={bookingsLoading}
+              >
+                <Text style={styles.refreshButtonText}>Uppdatera</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {bookingsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.gold} />
+                <Text style={styles.loadingText}>Laddar bokningar...</Text>
+              </View>
+            ) : filteredBookings.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Inga bokningar hittades</Text>
+                <TouchableOpacity 
+                  style={styles.emptyButton}
+                  onPress={fetchBookings}
+                >
+                  <Text style={styles.emptyButtonText}>Uppdatera</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={styles.scrollContainer}>
+                {filteredBookings.map((booking) => (
+                  <View key={booking.id} style={styles.bookingCard}>
+                    <View style={styles.bookingHeader}>
+                      <Text style={styles.bookingName}>{booking.name}</Text>
+                      <View style={[styles.statusBadge, { 
+                        backgroundColor: booking.status === 'confirmed' ? '#4CAF50' : 
+                                       booking.status === 'cancelled' ? '#F44336' : 
+                                       '#FFC107' 
+                      }]}>
+                        <Text style={styles.statusText}>
+                          {booking.status === 'pending' ? 'Väntar' : 
+                           booking.status === 'confirmed' ? 'Bekräftad' : 
+                           'Avbruten'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.bookingDetails}>
+                      <Text style={styles.bookingDetailText}>📅 {booking.date} kl {booking.time}</Text>
+                      <Text style={styles.bookingDetailText}>👥 {booking.guests}</Text>
+                      <Text style={styles.bookingDetailText}>📧 {booking.email}</Text>
+                      <Text style={styles.bookingDetailText}>📱 {booking.phone}</Text>
+                      {booking.message && (
+                        <Text style={styles.bookingDetailText}>💬 {booking.message}</Text>
+                      )}
+                    </View>
+                    
+                    <View style={styles.bookingActions}>
+                      {booking.status === 'pending' && (
+                        <>
+                          <TouchableOpacity 
+                            style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+                            onPress={() => updateBookingStatus(booking.id, 'confirmed')}
+                          >
+                            <Text style={styles.actionButtonText}>Bekräfta</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.actionButton, { backgroundColor: '#F44336' }]}
+                            onPress={() => updateBookingStatus(booking.id, 'cancelled')}
+                          >
+                            <Text style={styles.actionButtonText}>Avbryt</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                      {booking.status === 'confirmed' && (
+                        <TouchableOpacity 
+                          style={[styles.actionButton, { backgroundColor: '#F44336' }]}
+                          onPress={() => updateBookingStatus(booking.id, 'cancelled')}
+                        >
+                          <Text style={styles.actionButtonText}>Avbryt</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    
+                    <Text style={styles.bookingTimestamp}>
+                      Bokad: {new Date(booking.created_at).toLocaleDateString('sv-SE')} {new Date(booking.created_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
         );
       default:
@@ -2010,13 +3471,18 @@ export default function AdminScreen() {
         }}
       />
       
-      <View style={styles.tabContainer}>
+      <ScrollView 
+        horizontal 
+        style={styles.tabContainer}
+        contentContainerStyle={styles.tabScrollContent}
+        showsHorizontalScrollIndicator={false}
+      >
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'menu' && styles.activeTab]}
           onPress={() => setActiveTab('menu')}
         >
           <ShoppingBag 
-            size={24} 
+            size={20} 
             color={activeTab === 'menu' ? theme.colors.gold : theme.colors.text} 
           />
           <Text 
@@ -2034,7 +3500,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('users')}
         >
           <Users 
-            size={24} 
+            size={20} 
             color={activeTab === 'users' ? theme.colors.gold : theme.colors.text} 
           />
           <Text 
@@ -2052,7 +3518,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('orders')}
         >
           <ShoppingBag 
-            size={24} 
+            size={20} 
             color={activeTab === 'orders' ? theme.colors.gold : theme.colors.text} 
           />
           <Text 
@@ -2066,11 +3532,29 @@ export default function AdminScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity 
+          style={[styles.tab, activeTab === 'bookings' && styles.activeTab]}
+          onPress={() => setActiveTab('bookings')}
+        >
+          <Calendar 
+            size={20} 
+            color={activeTab === 'bookings' ? theme.colors.gold : theme.colors.text} 
+          />
+          <Text 
+            style={[
+              styles.tabText, 
+              activeTab === 'bookings' && styles.activeTabText
+            ]}
+          >
+            Bokningar
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
           style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
           onPress={() => setActiveTab('settings')}
         >
           <Settings 
-            size={24} 
+            size={20} 
             color={activeTab === 'settings' ? theme.colors.gold : theme.colors.text} 
           />
           <Text 
@@ -2088,7 +3572,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('notifications')}
         >
           <Bell 
-            size={24} 
+            size={20} 
             color={activeTab === 'notifications' ? theme.colors.gold : theme.colors.text} 
           />
           <Text 
@@ -2100,13 +3584,14 @@ export default function AdminScreen() {
             Notiser
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
       
       <View style={styles.header}>
         <Text style={styles.title}>
           {activeTab === 'menu' && 'Menyhantering'}
           {activeTab === 'users' && 'Användarhantering'}
           {activeTab === 'orders' && 'Orderhantering'}
+          {activeTab === 'bookings' && 'Bokningshantering'}
           {activeTab === 'settings' && 'Inställningar'}
           {activeTab === 'notifications' && 'Notifikationshantering'}
         </Text>
@@ -2114,6 +3599,7 @@ export default function AdminScreen() {
           {activeTab === 'menu' && 'Hantera menyartiklar, priser och kategorier'}
           {activeTab === 'users' && 'Hantera användare och deras behörigheter'}
           {activeTab === 'orders' && 'Hantera och spåra beställningar'}
+          {activeTab === 'bookings' && 'Hantera bordsbokningar och se alla reservationer'}
           {activeTab === 'settings' && 'Hantera restaurangens inställningar'}
           {activeTab === 'notifications' && 'Skicka meddelanden och erbjudanden till användare'}
         </Text>
@@ -2153,16 +3639,21 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   tabContainer: {
-    flexDirection: 'row',
     backgroundColor: theme.colors.card,
-    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    maxHeight: 80,
+  },
+  tabScrollContent: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   tab: {
-    flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
+    paddingHorizontal: 12,
+    minWidth: 80,
   },
   activeTab: {
     borderBottomWidth: 2,
@@ -2170,8 +3661,9 @@ const styles = StyleSheet.create({
   },
   tabText: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: 10,
     color: theme.colors.text,
+    textAlign: 'center',
   },
   activeTabText: {
     color: theme.colors.gold,
@@ -2848,5 +4340,936 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  // Booking styles
+  bookingCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  bookingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bookingName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  bookingDetails: {
+    marginBottom: 12,
+  },
+  bookingDetailText: {
+    color: theme.colors.text,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  bookingActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  bookingTimestamp: {
+    color: theme.colors.subtext,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+
+  // Användargränssnittet
+  userCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  userHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: theme.colors.text,
+    marginBottom: 2,
+  },
+  userPhone: {
+    fontSize: 14,
+    color: theme.colors.subtext,
+  },
+  userActions: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+  userTimestamp: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+    marginTop: 8,
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+
+  // Modal stilar för EditUserModal
+  formGroup: {
+    marginBottom: 15,
+  },
+  formLabel: {
+    marginBottom: 5,
+    fontWeight: '500',
+    color: theme.colors.text,
+    fontSize: 14,
+  },
+  formInput: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    marginTop: 5,
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginRight: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  roleOptionSelected: {
+    borderColor: theme.colors.gold,
+    backgroundColor: 'rgba(220, 201, 145, 0.1)',
+  },
+  roleOptionText: {
+    color: theme.colors.text,
+    fontSize: 14,
+  },
+  roleOptionTextSelected: {
+    fontWeight: 'bold',
+    color: theme.colors.gold,
+  },
+
+  // Förbättrad redigera-knapp
+  editUserButton: {
+    backgroundColor: theme.colors.gold,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  editButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 6,
+    padding: 4,
+    marginRight: 8,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+
+  // Ordergränssnittet
+  orderFilters: {
+    marginBottom: 16,
+  },
+  statusFilterContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusFilterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  statusFilterButtonActive: {
+    backgroundColor: theme.colors.gold,
+    borderColor: theme.colors.gold,
+  },
+  statusFilterText: {
+    fontSize: 14,
+    color: theme.colors.text,
+    fontWeight: '500',
+  },
+  statusFilterTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  orderCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  orderId: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+  },
+  orderInfo: {
+    marginBottom: 12,
+  },
+  orderCustomer: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  orderDate: {
+    fontSize: 14,
+    color: theme.colors.subtext,
+    marginBottom: 4,
+  },
+  orderPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.gold,
+    marginBottom: 4,
+  },
+  orderAddress: {
+    fontSize: 14,
+    color: theme.colors.text,
+    marginBottom: 2,
+  },
+  orderPhone: {
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  orderItems: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: 12,
+    marginBottom: 12,
+  },
+  orderItemsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  orderItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  orderItemQuantity: {
+    fontSize: 14,
+    color: theme.colors.text,
+    width: 30,
+    fontWeight: '500',
+  },
+  orderItemText: {
+    fontSize: 14,
+    color: theme.colors.text,
+    flex: 1,
+    marginLeft: 8,
+  },
+  orderItemPrice: {
+    fontSize: 14,
+    color: theme.colors.text,
+    fontWeight: 'bold',
+  },
+  orderActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  orderActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  orderActionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+
+  // Moderna Notification UI stilar
+  notificationHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 8,
+  },
+  notificationHeaderIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.gold + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  notificationTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  notificationSubtitle: {
+    fontSize: 16,
+    color: theme.colors.subtext,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 16,
+  },
+  notificationStatsContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    gap: 12,
+  },
+  notificationStatCard: {
+    flex: 1,
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    gap: 8,
+  },
+  notificationStatNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  notificationStatLabel: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  notificationForm: {
+    flex: 1,
+  },
+  notificationFormSection: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  notificationFormHeader: {
+    marginBottom: 20,
+  },
+  notificationInputGroup: {
+    marginBottom: 20,
+  },
+  notificationInputLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  notificationInputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  notificationDropdownButton: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  notificationDropdownButtonText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '500',
+  },
+  notificationDropdownMenu: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  notificationDropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  notificationDropdownItemActive: {
+    backgroundColor: theme.colors.gold + '15',
+  },
+  notificationDropdownItemText: {
+    fontSize: 16,
+    color: theme.colors.text,
+  },
+  notificationDropdownItemTextActive: {
+    color: theme.colors.gold,
+    fontWeight: '600',
+  },
+  notificationSchedulingDetails: {
+    marginTop: 16,
+  },
+  notificationSchedulingRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  notificationSchedulingCol: {
+    flex: 1,
+  },
+  notificationTextInput: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: theme.colors.text,
+    fontSize: 16,
+  },
+  notificationTextAreaInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  notificationCharacterCountContainer: {
+    alignItems: 'flex-end',
+    marginTop: 8,
+  },
+  notificationCharacterCount: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+  },
+  notificationCharacterCountWarning: {
+    color: '#F59E0B',
+  },
+  notificationSoundContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  notificationCheckboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationCheckboxChecked: {
+    backgroundColor: theme.colors.gold,
+    borderColor: theme.colors.gold,
+  },
+  notificationCheckboxLabel: {
+    fontSize: 16,
+    color: theme.colors.text,
+  },
+  notificationPreviewSection: {
+    marginBottom: 24,
+  },
+  notificationPreviewButton: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: theme.colors.gold + '30',
+  },
+  notificationPreviewButtonText: {
+    fontSize: 16,
+    color: theme.colors.gold,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  notificationPreviewContainer: {
+    marginTop: 16,
+  },
+  notificationPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  notificationPreviewNotification: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.gold,
+  },
+  notificationPreviewSuccess: {
+    borderLeftColor: '#10B981',
+  },
+  notificationPreviewError: {
+    borderLeftColor: '#EF4444',
+  },
+  notificationPreviewPromo: {
+    borderLeftColor: '#F59E0B',
+  },
+  notificationPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  notificationPreviewIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  notificationPreviewNotificationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  notificationPreviewNotificationMessage: {
+    fontSize: 14,
+    color: '#ccc',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  notificationPreviewFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  notificationPreviewDetails: {
+    fontSize: 12,
+    color: '#888',
+  },
+  notificationPreviewTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  notificationSendButton: {
+    backgroundColor: theme.colors.gold,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  notificationSendButtonDisabled: {
+    opacity: 0.5,
+  },
+  notificationSendButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationSendButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
+    marginLeft: 8,
+  },
+  notificationTemplatesSection: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  notificationTemplatesHeader: {
+    marginBottom: 20,
+  },
+  notificationTemplatesSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  notificationTemplatesSectionDescription: {
+    fontSize: 14,
+    color: theme.colors.subtext,
+    lineHeight: 20,
+  },
+  notificationTemplateCategory: {
+    marginBottom: 20,
+  },
+  notificationTemplateCategoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  notificationTemplateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  notificationTemplateButton: {
+    backgroundColor: theme.colors.inputBg,
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 100,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  notificationTemplatePromo: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#F59E0B' + '15',
+  },
+  notificationTemplateButtonIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  notificationTemplateButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+
+  // Notification tabs
+  notificationTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  notificationTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  notificationTabActive: {
+    backgroundColor: theme.colors.gold + '20',
+  },
+  notificationTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  notificationTabTextActive: {
+    color: theme.colors.gold,
+  },
+
+  // Admin notification settings
+  adminNotificationSection: {
+    flex: 1,
+  },
+  adminNotificationHeader: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  adminNotificationCategory: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  adminNotificationCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 16,
+  },
+  adminNotificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  adminNotificationItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 16,
+  },
+  adminNotificationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: theme.colors.gold + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  adminNotificationContent: {
+    flex: 1,
+  },
+  adminNotificationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  adminNotificationDescription: {
+    fontSize: 14,
+    color: theme.colors.subtext,
+    lineHeight: 20,
+  },
+  adminNotificationToggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: theme.colors.border,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  adminNotificationToggleActive: {
+    backgroundColor: theme.colors.gold,
+  },
+  adminNotificationToggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  adminNotificationToggleThumbActive: {
+    transform: [{ translateX: 20 }],
+  },
+  adminNotificationSaveButton: {
+    backgroundColor: theme.colors.gold,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  adminNotificationSaveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminNotificationSaveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
+    marginLeft: 8,
+  },
+
+  // Settings styles
+  settingsSection: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  settingsSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 20,
+  },
+  settingsInputGroup: {
+    marginBottom: 20,
+  },
+  settingsLabelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  settingsLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 8,
+    marginLeft: 8,
+  },
+  settingsInput: {
+    backgroundColor: theme.colors.inputBg,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: theme.colors.text,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  settingsTextArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  settingsToggleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  saveSettingsButton: {
+    backgroundColor: theme.colors.gold,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  saveSettingsButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

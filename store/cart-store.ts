@@ -46,19 +46,8 @@ export const useCartStore = create<CartState>()(
           });
         }
 
-        // Visa notifikation när produkt läggs till
-        const totalItems = get().getTotalItems();
-        useNotificationStore.getState().showSuccess(
-          'Tillagd i kundkorgen! 🛒',
-          `${menuItem.name} har lagts till. Totalt: ${totalItems} produkter`,
-          {
-            label: 'Visa kundkorg',
-            onPress: () => {
-              // Navigera till cart - implementation kommer senare
-              console.log('Navigera till kundkorg');
-            },
-          }
-        );
+        // Endast logga - ingen in-app notifikation
+        console.log(`${menuItem.name} tillagd i kundkorgen`);
       },
       
       removeFromCart: (id: string) => {
@@ -69,12 +58,9 @@ export const useCartStore = create<CartState>()(
           items: items.filter(item => item.id !== id)
         });
 
-        // Visa notifikation när produkt tas bort
+        // Endast logga - ingen in-app notifikation
         if (removedItem) {
-          useNotificationStore.getState().showInfo(
-            'Borttagen från kundkorgen',
-            `${removedItem.menuItem.name} har tagits bort`
-          );
+          console.log(`${removedItem.menuItem.name} borttagen från kundkorgen`);
         }
       },
       
@@ -127,11 +113,8 @@ export const useCartStore = create<CartState>()(
       clearCart: () => {
         set({ items: [] });
         
-        // Visa notifikation när kundkorgen rensas
-        useNotificationStore.getState().showInfo(
-          'Kundkorg rensad',
-          'Alla produkter har tagits bort från kundkorgen'
-        );
+        // Endast logga - ingen in-app notifikation
+        console.log('Kundkorg rensad');
       },
       
       getTotalPrice: () => {
@@ -149,21 +132,21 @@ export const useCartStore = create<CartState>()(
         const orderId = Date.now().toString();
         const totalPrice = get().getTotalPrice();
         
-        // Simulera checkout-process
-        useNotificationStore.getState().showOrderConfirmation(orderId, 25);
+        // Skicka push-notifikation för orderbekräftelse
+        useNotificationStore.getState().sendOrderConfirmation(orderId, 25);
         
         // Rensa kundkorgen efter checkout
         set({ items: [] });
         
         // Simulera order ready efter 3 sekunder (för demo)
         setTimeout(() => {
-          useNotificationStore.getState().showOrderReady(orderId, false);
+          useNotificationStore.getState().sendOrderReady(orderId, false);
         }, 3000);
 
         // Simulera loyalty points efter 5 sekunder (för demo)
         setTimeout(() => {
           const pointsEarned = Math.floor(totalPrice / 10); // 1 poäng per 10kr
-          useNotificationStore.getState().showLoyaltyReward(pointsEarned, pointsEarned + 45);
+          useNotificationStore.getState().sendLoyaltyReward(pointsEarned, pointsEarned + 45);
         }, 5000);
       }
     }),

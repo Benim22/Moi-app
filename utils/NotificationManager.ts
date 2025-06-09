@@ -27,35 +27,40 @@ Notifications.setNotificationHandler({
     switch (data?.type) {
       case 'order':
         return {
-          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: true,
           shouldSetBadge: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
         };
       case 'promo':
         return {
-          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: false,
           shouldSetBadge: false,
           priority: Notifications.AndroidNotificationPriority.DEFAULT,
         };
       case 'reminder':
         return {
-          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: false,
           shouldSetBadge: false,
           priority: Notifications.AndroidNotificationPriority.LOW,
         };
       case 'loyalty':
         return {
-          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: true,
           shouldSetBadge: true,
           priority: Notifications.AndroidNotificationPriority.DEFAULT,
         };
       default:
         return {
-          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: false,
           shouldSetBadge: false,
         };
@@ -150,6 +155,69 @@ export class NotificationManager {
     } catch (error) {
       console.error('❌ Fel vid hämtning av push token:', error);
       return null;
+    }
+  }
+
+  // Skicka push-notifikation till specifik token via Expo Push API
+  static async sendPushNotificationToToken(
+    pushToken: string, 
+    payload: {
+      title: string;
+      body: string;
+      data?: Record<string, any>;
+      sound?: boolean;
+      priority?: 'low' | 'normal' | 'high';
+    }
+  ): Promise<void> {
+    try {
+      const message = {
+        to: pushToken,
+        title: payload.title,
+        body: payload.body,
+        data: payload.data || {},
+        sound: payload.sound ? 'default' : undefined,
+        priority: payload.priority === 'high' ? 'high' : 'normal',
+        channelId: this.getChannelForNotificationType(payload.data?.type || 'default'),
+      };
+
+      // Skicka via Expo Push API
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message),
+      });
+
+      const result = await response.json();
+      
+      if (result.data && result.data.status === 'ok') {
+        console.log('✅ Push-notifikation skickad via Expo API');
+      } else {
+        console.error('❌ Fel från Expo Push API:', result);
+      }
+    } catch (error) {
+      console.error('❌ Fel vid skicka push-notifikation:', error);
+    }
+  }
+
+  // Hjälpmetod för att få rätt notifikationskanal
+  private static getChannelForNotificationType(type: string): string {
+    switch (type) {
+      case 'order':
+      case 'order_status':
+      case 'booking':
+        return 'moi-orders';
+      case 'promo':
+        return 'moi-promos';
+      case 'reminder':
+        return 'moi-reminders';
+      case 'loyalty':
+        return 'moi-loyalty';
+      default:
+        return 'moi-orders';
     }
   }
 

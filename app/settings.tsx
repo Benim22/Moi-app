@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase';
 import FAQModal from '@/components/FAQModal';
 import TermsOfServiceModal from '@/components/TermsOfServiceModal';
 import PrivacyPolicyModalFull from '@/components/PrivacyPolicyModalFull';
-import TestNotifications from '@/components/TestNotifications';
+// TestNotifications borttagen - använder endast push-notifikationer nu
 
 // Ersätter expo-notifications-implementationen om paketet saknas
 const Notifications = {
@@ -240,7 +240,7 @@ export default function SettingsScreen() {
             />
           </View>
           
-          {notifications && <TestNotifications />}
+          {/* TestNotifications borttagen - push-notifikationer hanteras automatiskt */}
           
           <View style={styles.preferenceItem}>
             <View style={styles.preferenceLeft}>

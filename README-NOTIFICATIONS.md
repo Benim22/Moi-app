@@ -1,172 +1,131 @@
-# Notifikationssystem för Moi Sushi
+# Push-Notifikationssystem för Moi Sushi
 
-Detta dokument beskriver hur notifikationssystemet för Moi Sushi-appen fungerar och hur det kan användas.
+Detta dokument beskriver hur det uppdaterade push-notifikationssystemet för Moi Sushi-appen fungerar.
 
 ## Översikt
 
-Notifikationssystemet i Moi Sushi-appen använder Expo Notifications för att hantera både lokala och push-notifikationer. Systemet stödjer flera typer av notifikationer och kan anpassas för olika användningsfall.
+Notifikationssystemet använder **endast push-notifikationer** via Expo Push API. Alla in-app notifikationer har tagits bort för en renare användarupplevelse.
 
 ### Huvudfunktioner
 
-- Registrering för push-notifikationer och behörighetshantering
-- Lagring av användarens push-token i databasen
-- Typade notifikationer för olika händelser (order, kampanjer, app-uppdateringar)
-- Separata Android-notifikationskanaler för olika kategorier
-- Testverktyg för notifikationer
-
-## Installation och konfiguration
-
-Systemet använder expo-notifications som måste installeras i projektet:
-
-```bash
-expo install expo-notifications
-```
-
-För att stödja push-notifikationer på Android behöver en Google Firebase-konfiguration skapas och `google-services.json` läggas till i projektmappen.
-
-För att appen ska kunna skicka push-notifikationer måste den vara publicerad via EAS (Expo Application Services).
+- Automatiska push-notifikationer till admins vid nya bokningar och beställningar
+- Push-notifikationer till användare när deras beställningar slutförs eller avbryts
+- Rollbaserade notifikationer (admin vs användare)
+- Automatisk registrering och lagring av push tokens
+- Exponentiellt skalbart via Expo Push API
 
 ## Teknisk arkitektur
 
-Systemet består av flera komponenter:
+### Nya komponenter:
 
-1. **Notifikationsbibliotek (`lib/notifications/index.ts`)**: Huvudbiblioteket med funktioner för hantering av notifikationer
-2. **Typdefinitioner (`lib/notifications/types.ts`)**: Definierar olika typer av notifikationer och hjälpfunktioner
-3. **Notifikationshanterare (`components/NotificationsManager.tsx`)**: React-komponent som lyssnar på och hanterar notifikationer
-4. **Testverktyg (`components/TestNotifications.tsx`)**: Komponent för att testa olika typer av notifikationer
+1. **`utils/PushNotificationService.ts`**: Huvudtjänst för push-notifikationer
+2. **`utils/NotificationManager.ts`**: Uppdaterad med stöd för push tokens
+3. **`store/notification-store.ts`**: Förenklad för endast push-notiser
 
-## Databaseändringar
+### Borttagna komponenter:
+- `components/InAppNotification.tsx` 
+- `components/NotificationContainer.tsx`
+- `components/TestNotifications.tsx`
 
-Systemet kräver att en `push_token`-kolumn läggs till i `profiles`-tabellen:
+## Push-Notifikationer
 
-```sql
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS push_token TEXT;
-```
+### För Admins:
 
-## Användning
+#### Ny bordbokning 🍽️
+- **Trigger**: När kund bokar bord via `/booking`
+- **Meddelande**: "Ny bordbokning - [Namn] har bokat bord för [antal] personer den [datum] kl [tid]"
 
-### Registrera för notifikationer
+#### Ny beställning 🛒  
+- **Trigger**: När kund lägger order via `/checkout`
+- **Meddelande**: "Ny beställning - [Namn] har lagt en order på [pris] kr ([antal] produkter)"
 
-För att registrera en användare för notifikationer:
+### För Användare:
 
-```typescript
-import { registerForPushNotificationsAsync, updatePushToken } from '@/lib/notifications';
+#### Order slutförd ✅
+- **Trigger**: Admin klickar "Slutför" i admin/orders
+- **Meddelande**: "Din beställning är klar! - Din mat är färdig och väntar på att hämtas eller levereras."
 
-// Vid inloggning eller app-start
-const token = await registerForPushNotificationsAsync();
-if (token && user) {
-  await updatePushToken(user.id, token);
-}
-```
+#### Order avbruten ❌
+- **Trigger**: Admin klickar "Avbryt" i admin/orders  
+- **Meddelande**: "Beställning avbruten - Din beställning har tyvärr avbrutits. Kontakta restaurangen för mer information."
 
-### Skicka notifikationer
+## Implementation
 
-#### Skicka orderstatusuppdateringar:
+### Push Token-hantering
 
-```typescript
-import { sendOrderStatusNotification } from '@/lib/notifications';
-
-// När en orderstatus ändras
-await sendOrderStatusNotification(userId, orderId, 'completed');
-```
-
-#### Skicka typad notifikation:
+Push tokens sparas automatiskt i `profiles.push_token` när användare loggar in:
 
 ```typescript
-import { sendTypedNotification, NotificationType } from '@/lib/notifications';
-
-// Skapa notifikationsdata
-const notificationData = {
-  type: NotificationType.PROMO_DISCOUNT,
-  data: {
-    discount: '15%',
-    promoCode: 'MOI15'
-  }
-};
-
-// Hämta användartoken och skicka notifikation
-const token = await getUserPushToken(userId);
-if (token) {
-  await sendTypedNotification(token, notificationData);
-}
+// Auto-sparas i store/notification-store.ts
+await supabase
+  .from('profiles')
+  .update({ push_token: token })
+  .eq('id', user.id);
 ```
 
-### Lyssna på notifikationer
+### Rollbaserade Notifikationer
 
-NotificationsManager-komponenten lyssnar automatiskt på notifikationer och hanterar navigering baserat på notifikationsdata. För att lägga till egen hantering:
+Systemet identifierar admins via `profiles.role = 'admin'`:
 
 ```typescript
-import * as Notifications from 'expo-notifications';
-
-// Lyssna på inkommande notifikationer
-const subscription = Notifications.addNotificationReceivedListener(notification => {
-  console.log('Notifikation mottagen:', notification);
-  // Hantera notifikation här
+// Skicka till alla admins
+await PushNotificationService.notifyAdmins({
+  title: "Ny bordbokning",
+  body: "Kund har bokat bord...",
+  sound: true,
+  priority: 'high'
 });
-
-// Städa upp när komponenten avmonteras
-return () => subscription.remove();
 ```
 
-## Typer av notifikationer
+### Automatiska Triggers
 
-Systemet stödjer följande typer av notifikationer:
+1. **Booking**: `app/(tabs)/booking.tsx` → `notifyAdminsNewBooking()`
+2. **Order**: `store/orders-store.ts` → `notifyAdminsNewOrder()`  
+3. **Status**: `app/admin/orders.tsx` → `notifyUserOrderCompleted/Cancelled()`
 
-### Order-relaterade notifikationer
-- `ORDER_PLACED`: När en order har lagts
-- `ORDER_ACCEPTED`: När personalen accepterar en order
-- `ORDER_PROCESSING`: När ordern börjar tillagas
-- `ORDER_COMPLETED`: När ordern är redo för upphämtning
-- `ORDER_CANCELLED`: När ordern har avbrutits
+## API-struktur
 
-### Kampanj/marknadsföringsnotifikationer
-- `PROMO_NEW`: Nya kampanjer eller produkter
-- `PROMO_DISCOUNT`: Rabatterbjudanden
-- `PROMO_SPECIAL`: Speciella händelser
-
-### App-relaterade notifikationer
-- `APP_UPDATE`: App-uppdateringar
-- `PROFILE_UPDATE`: Profiluppdateringar
-
-## Test av notifikationer
-
-En testkomponent har skapats för att testa olika typer av notifikationer:
+### PushNotificationService metoder:
 
 ```typescript
-import TestNotifications from '@/components/TestNotifications';
+// Till admins
+notifyAdmins(payload: PushNotificationPayload)
+notifyAdminsNewBooking(booking: BookingData)
+notifyAdminsNewOrder(order: OrderData)
 
-// Lägg till i en valfri vy för testning
-<TestNotifications />
+// Till användare  
+notifyUser(userId: string, payload: PushNotificationPayload)
+notifyUserOrderCompleted(userId: string, orderId: string, customerName: string)
+notifyUserOrderCancelled(userId: string, orderId: string, customerName: string)
 ```
 
-## Utökningsmöjligheter
+## Dataflöde
 
-Notifikationssystemet kan enkelt utökas med nya typer av notifikationer genom att lägga till nya typer i `NotificationType`-enum och uppdatera `getNotificationTitle` och `getNotificationBody`-funktionerna.
+### Ny bokning:
+1. Kund fyller i bokningsformulär
+2. Bokning sparas i databas
+3. `PushNotificationService.notifyAdminsNewBooking()` triggas
+4. Push-notis skickas till alla admins
 
-### Potentiella ytterligare funktioner:
+### Ny beställning:
+1. Kund slutför checkout
+2. Order sparas via `orders-store.ts`
+3. `PushNotificationService.notifyAdminsNewOrder()` triggas  
+4. Push-notis skickas till alla admins
 
-1. **Schemalagda notifikationer** - t.ex. påminnelser om ordern inte har hämtats
-2. **Lokal notifikationshistorik** - spara notifikationer lokalt för senare visning
-3. **Notifikationsfiltrering** - låta användaren filtrera vilka typer av notifikationer de vill få
-4. **Rich notifications** - lägga till bilder, åtgärdsknappar i notifikationer
-5. **Notifikationsljud** - anpassade ljud för olika typer av notifikationer
+### Orderstatus-ändring:
+1. Admin klickar "Slutför"/"Avbryt" i admin/orders
+2. Status uppdateras i databas
+3. `PushNotificationService.notifyUserOrderCompleted/Cancelled()` triggas
+4. Push-notis skickas till kunden
 
-## Felsökning
+## Fördelar med nya systemet
 
-Om notifikationer inte fungerar som förväntat, kontrollera följande:
+✅ **Renare UX** - Inga störande popups
+✅ **Systemnotifikationer** - Visas i notification center  
+✅ **Automatisk hantering** - Inga manuella steg
+✅ **Rollbaserat** - Rätt personer får rätt notiser
+✅ **Skalbart** - Fungerar för tusentals användare
+✅ **Felhantering** - Robust error handling
 
-1. Säkerställ att användaren har gett behörighet för notifikationer
-2. Kontrollera att push-token har sparats korrekt i databasen
-3. Verifiera att enheten är ansluten till internet
-4. För Android, kontrollera att notifikationskanalerna har konfigurerats korrekt
-5. För fysiska enheter, verifiera att Expo Push-tjänsten fungerar korrekt
-
-## Serversdel (för framtida implementation)
-
-För en mer robust lösning kan ett server-API skapas för att hantera push-notifikationer centralt, vilket skulle möjliggöra:
-
-1. Batch-utskick av notifikationer
-2. Schemaläggning av notifikationer
-3. Notifikationsanalys och spårning
-4. Användarspecifik anpassning av notifikationer
-5. Enklare hantering av användarpreferenser 
+Systemet kräver inga manuella steg - allt sker automatiskt baserat på användaråtgärder! 

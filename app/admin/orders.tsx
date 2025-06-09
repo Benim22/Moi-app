@@ -13,7 +13,7 @@ import { theme } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { Eye, Clock, Check, X } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
-import { sendOrderStatusNotification } from '@/lib/notifications';
+// Använder nu PushNotificationService istället för gamla notification-systemet
 
 // Definiera OrderItem enligt tabellstrukturen i bilden
 interface OrderItem {
@@ -102,10 +102,10 @@ export default function AdminOrdersScreen() {
   // Uppdatera orderstatus
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      // Hämta först order för att få user_id
+      // Hämta först order för att få user_id och kundens namn
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .select('user_id')
+        .select('user_id, name')
         .eq('id', orderId)
         .single();
       
@@ -119,15 +119,35 @@ export default function AdminOrdersScreen() {
       
       if (error) throw error;
       
-      // Skicka notifikation till användaren
+      // Skicka push-notifikation till användaren
       if (orderData?.user_id) {
-        await sendOrderStatusNotification(orderData.user_id, orderId, newStatus);
+        try {
+          const { PushNotificationService } = await import('@/utils/PushNotificationService');
+          
+          if (newStatus === 'completed') {
+            await PushNotificationService.notifyUserOrderCompleted(
+              orderData.user_id, 
+              orderId, 
+              orderData.name || 'Kund'
+            );
+          } else if (newStatus === 'cancelled') {
+            await PushNotificationService.notifyUserOrderCancelled(
+              orderData.user_id, 
+              orderId, 
+              orderData.name || 'Kund'
+            );
+          }
+        } catch (notificationError) {
+          console.error('❌ Fel vid skicka push-notifikation till användare:', notificationError);
+        }
       }
       
       // Uppdatera lokal state
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: newStatus as any } : order
       ));
+      
+      console.log(`✅ Order ${orderId} uppdaterad till status: ${newStatus}`);
     } catch (error) {
       console.error('Error updating order status:', error);
     }

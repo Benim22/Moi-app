@@ -8,7 +8,8 @@ import { NotificationType, NotificationData, getNotificationTitle, getNotificati
 // Konfigurera hur notifikationer ska presenteras för användaren
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true, // Visa alert även om appen är i förgrunden
+    shouldShowBanner: true, // Visa banner även om appen är i förgrunden
+    shouldShowList: true, // Visa i notifikationslistan
     shouldPlaySound: true, // Spela ljud
     shouldSetBadge: true, // Uppdatera app icon badge
   }),

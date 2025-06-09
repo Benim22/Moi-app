@@ -20,6 +20,18 @@ export default function HomeScreen() {
     router.push('/menu');
   };
 
+  const navigateToSushi = () => {
+    router.push('/menu?category=sushi');
+  };
+
+  const navigateToPokeBowl = () => {
+    router.push('/menu?category=poké bowl');
+  };
+
+  const navigateToFriteradSushi = () => {
+    router.push('/menu?category=friterad sushi');
+  };
+
   const navigateToBooking = () => {
     router.push('/booking');
   };
@@ -103,21 +115,21 @@ export default function HomeScreen() {
             title="Färsk Sushi"
             description="Handgjord sushi med färska ingredienser av högsta kvalitet"
             imageUrl={require('@/assets/images/magic avokado.jpg')}
-            onPress={navigateToMenu}
+            onPress={navigateToSushi}
           />
           
           <SpecialtyCard
             title="Poké Bowls"
             description="Färgglada och näringsrika bowls med smakrika kombinationer"
             imageUrl={require('@/assets/images/crispy chicken.png')}
-            onPress={navigateToMenu}
+            onPress={navigateToPokeBowl}
           />
           
           <SpecialtyCard
             title="Helfriterade Maki"
             description="Krispiga friterade maki med unika fyllningar"
             imageUrl={require('@/assets/images/helfriterad salmon.jpg')}
-            onPress={navigateToMenu}
+            onPress={navigateToFriteradSushi}
           />
         </View>
 

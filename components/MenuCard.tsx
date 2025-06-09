@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Platform, ToastAndroid } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { theme } from '@/constants/theme';
 import { MenuItem } from '@/store/menu-store';
 import { Plus, Heart, Info, Check } from 'lucide-react-native';
@@ -43,20 +43,19 @@ export default function MenuCard({ item, onPress, onInfoPress }: MenuCardProps) 
     try {
       addItem(item);
       
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(`${item.name} tillagd i varukorgen`, ToastAndroid.SHORT);
-      }
+              // Endast logga - ingen toast
+        console.log(`${item.name} tillagd i varukorgen`);
       
     } catch (error) {
       console.error('Fel vid tillägg i varukorgen:', error);
       setIsAddingToCart(false);
-      Alert.alert('Fel', 'Kunde inte lägga till produkten i varukorgen');
+              console.error('Kunde inte lägga till produkten i varukorgen');
     }
   };
   
   const handleToggleFavorite = async () => {
     if (!isLoggedIn) {
-      Alert.alert('Logga in', 'Du måste vara inloggad för att spara favoriter');
+              console.log('Du måste vara inloggad för att spara favoriter');
       return;
     }
     
@@ -65,7 +64,7 @@ export default function MenuCard({ item, onPress, onInfoPress }: MenuCardProps) 
       setIsFavorited(!isFavorited); // Uppdatera UI direkt
     } catch (error) {
       console.error('Fel vid hantering av favorit:', error);
-      Alert.alert('Fel', 'Kunde inte uppdatera favoriter');
+              console.error('Kunde inte uppdatera favoriter');
     }
   };
 

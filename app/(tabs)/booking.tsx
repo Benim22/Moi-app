@@ -22,6 +22,7 @@ import { format, addDays, isValid, startOfMonth, endOfMonth, eachDayOfInterval, 
 import { sv } from 'date-fns/locale';
 import { Stack } from 'expo-router';
 import Footer from '@/components/Footer';
+import { supabase } from '@/lib/supabase';
 
 // Interface för datum och tid objekt
 interface TimeOption {
@@ -270,73 +271,56 @@ export default function BookingScreen() {
       return;
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Fel', 'Vänligen ange en giltig e-postadress');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      console.log('Sending booking request to:', `${API_URL}/email/booking`);
-      console.log('Using platform:', Platform.OS);
-      
-      // Testa först om servern är tillgänglig
+      // Spara bokningen i databasen
       try {
-        const statusResponse = await fetch(`${API_URL}/status`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        
-        if (statusResponse.ok) {
-          console.log('Server status check OK, proceeding with booking');
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert({
+            name,
+            email,
+            phone,
+            date,
+            time,
+            guests,
+            message: message || null,
+            status: 'pending',
+            user_id: profile?.id || null
+          })
+          .select()
+          .single();
+
+        if (bookingError) {
+          console.error('❌ Fel vid sparning av bokning i databas:', bookingError);
+          throw bookingError;
         } else {
-          console.warn('Server status check failed:', await statusResponse.text());
+          console.log('✅ Bokning sparad i databas med ID:', bookingData.id);
         }
-      } catch (error) {
-        const statusError = error as Error;
-        console.warn('Server status check error:', statusError.message);
-        // Vi fortsätter ändå med bokningen, för att se om det fungerar
+      } catch (dbError) {
+        console.error('❌ Oväntat fel vid sparning av bokning:', dbError);
+        throw new Error('Kunde inte spara bokningen');
       }
-      
-      // Nu skickar vi bokningsförfrågan
-      const response = await fetch(`${API_URL}/email/booking`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          customerEmail: email,
-          customerName: name,
-          bookingDate: date,
-          bookingTime: time,
-          guests,
-          phone,
-          message,
-        }),
-      });
 
-      // Försök att få svarsdata, men hantera även om svaret inte är giltigt JSON
-      let responseData;
+      // Skicka push-notifikation till admins om ny bokning
       try {
-        responseData = await response.json();
-      } catch (e) {
-        console.error('Error parsing response:', e);
-        responseData = { error: 'Could not parse server response' };
-      }
-
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to send booking');
+        const { PushNotificationService } = await import('@/utils/PushNotificationService');
+        await PushNotificationService.notifyAdminsNewBooking({
+          name,
+          date,
+          time,
+          guests,
+          email,
+          phone
+        });
+      } catch (notificationError) {
+        console.error('❌ Fel vid skicka admin-notifikation:', notificationError);
       }
 
       Alert.alert(
         'Bokning mottagen', 
-        `Tack för din bokning ${name}! Vi har skickat en bekräftelse till ${email}. Vi ser fram emot att välkomna dig ${date} kl ${time}.`,
+        `Tack för din bokning ${name}! Du kommer att få push-notiser om din boknings status. Vi ser fram emot att välkomna dig ${date} kl ${time}.`,
         [{ text: 'OK' }]
       );
       
