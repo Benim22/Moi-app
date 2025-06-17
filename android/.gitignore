@@ -6,6 +6,8 @@
 #
 build/
 .idea
+.env
+.env.local
 .gradle
 local.properties
 *.iml
